@@ -1,25 +1,7 @@
 
 
-@import url("./catppuccin_frappe.css");
 
-/* Common variables */
-:vars {
-    --module-bg: alpha(@base, 0.7);
-    --bg: alpha(@crust, 0.7); /* This looks like shit without blur*/
-    --fg: @text;
-    --fg-dark: @overlay0;
-    --base: @base;
-    --blue1: @blue;
-    --blue2: @sapphire;
-    --red1: @red;
-    --red2: @mauve;
-    --green1: @green;
-    --green2: @sky;
-    --yellow1: @yellow;
-    --yellow2: @peach;
-    --shadow: mix(@crust, #000000, 0.5);
-    --glow: lighter(var(--fg));
-}
+@import url("./catppuccin_frappe.css");
 
 * {
     all: unset;
@@ -30,13 +12,13 @@
 }
 
 #window {
-    background-color: var(--bg);
+    background-color: var(--bg1);
     padding: 18px 8px;
     border-radius: 16px;
 }
 
 #outer-box {
-    background-color: var(--module-bg);
+    background-color: mix(var(--bg2), var(--fg-dark1), 0.1);
     margin: -6px 4px;
     border-radius: 8px;
     padding: 8px;
@@ -50,7 +32,7 @@
     min-height: 40px;
     min-width: 40px;
     border-radius: 4px;
-    border: solid 1px var(--fg);
+    border: solid 1px var(--fg1);
     padding: 33px;
     margin: 12px;
     margin-right: 24px;
@@ -58,7 +40,7 @@
 
 #profile label.username {
     font-size: 20px;
-    color: var(--fg);
+    color: var(--fg1);
 }
 #profile button.date label {
     font-size: 14px;
@@ -71,7 +53,7 @@
 #button-icon label {
     background-size: 400% 400%;
     font-size: 33px;
-    color: var(--fg-dark);
+    color: var(--fg-dark1);
     margin: 0 9px;
 }
 #button-icon:hover label {
@@ -81,11 +63,11 @@
 
 
 #network-controls button {
-    background-color: var(--fg-dark);
+    background-color: var(--fg-dark1);
     margin: 2px 12px;
 }
 #network-controls button label {
-    color: var(--fg);
+    color: var(--fg1);
     margin: 6px;
 }
 #network-controls button:hover label {
@@ -93,15 +75,15 @@
 }
 #network-controls button {
     border-radius: 6px;
-    background-color: var(--module-bg);
-    border: solid 1px var(--fg);
+    background-color: var(--bg2);
+    border: solid 1px var(--fg1);
     min-width: 24px;
     margin: 14px 2px;
 }
 #network-controls button label {
     font-size: 20px;
     text-shadow: 0px 0px 4px var(--blue1);
-    color: var(--module-bg);
+    color: var(--bg2);
     margin: 0 4px;
     margin-right: 8px;
 }
@@ -111,14 +93,14 @@
 }
 
 #scale-a {
-    background-color: mix(var(--base), #000000, 0.2);
+    background-color: mix(var(--base1), #000000, 0.2);
     padding: 3px 0;
     border-radius: 100px;
     margin: 6px 12px;
 }
 
 #scale-a slider {
-    background-color: mix(var(--green2), var(--base), 0.1);
+    background-color: mix(var(--green2), var(--base1), 0.1);
     box-shadow: 0 0 6px 1px var(--shadow);
     border-radius: 100%;
     min-height: 18px;
@@ -137,7 +119,7 @@
 }
 #scale-a scale trough {
     all: unset;
-    background-color: darker(var(--base));
+    background-color: darker(var(--base1));
     border-radius: 8px;
     min-height: 6px;
     min-width: 198px;
@@ -153,7 +135,7 @@
 }
 
 #media scale {
-    background-color: alpha(var(--base), 0.7);
+    background-color: alpha(var(--base1), 0.7);
     padding: 3px 0;
     border-radius: 100px;
     margin: 6px 12px;
@@ -165,7 +147,7 @@
 }
 #media scale trough {
     all: unset;
-    background-color: darker(var(--base));
+    background-color: darker(var(--base1));
     border-radius: 8px;
     min-height: 10px;
     min-width: 166px;
@@ -173,19 +155,19 @@
 #player-art {
     padding: 36px;
     background-size: cover;
-    background-color: darker(var(--base));
+    background-color: darker(var(--base1));
     border-radius: 6px;
     margin: 8px;
 }
 #media .artist {
-    color: darker(var(--fg));
+    color: darker(var(--fg1));
 }
 #media .title {
-    color: var(--fg);
+    color: var(--fg1);
     font-size: 12px;
 }
 #media .timestamp {
-    color: var(--fg-dark);
+    color: var(--fg-dark1);
     font-size: 10px;
 }
 
@@ -205,7 +187,7 @@
 }
 
 #weather-desc {
-    color: darker(var(--fg));
+    color: darker(var(--fg1));
     margin-bottom: 12px;
     min-width: 30px;
 }
@@ -219,8 +201,8 @@
     margin: 6px 0;
 }
 #hw-mon #hwmon-item.green #circular-bar {
-    background-color: darker(var(--base));
-    color: mix(var(--base), #000000, 0.5);
+    background-color: darker(var(--base1));
+    color: mix(var(--base1), #000000, 0.5);
     border-color: var(--green1);
 }
 #hw-mon #hwmon-item.green label {
@@ -228,8 +210,8 @@
 }
 
 #hw-mon #hwmon-item.red #circular-bar {
-    background-color: darker(var(--base));
-    color: mix(var(--base), #000000, 0.5);
+    background-color: darker(var(--base1));
+    color: mix(var(--base1), #000000, 0.5);
     border-color: var(--red1);
 }
 #hw-mon #hwmon-item.red label {
@@ -237,8 +219,8 @@
 }
 
 #hw-mon #hwmon-item.blue #circular-bar {
-    background-color: darker(var(--base));
-    color: mix(var(--base), #000000, 0.5);
+    background-color: darker(var(--base1));
+    color: mix(var(--base1), #000000, 0.5);
     border-color: var(--blue1);
 }
 #hw-mon #hwmon-item.blue label {
@@ -246,8 +228,8 @@
 }
 
 #hw-mon #hwmon-item.yellow #circular-bar {
-    background-color: darker(var(--base));
-    color: mix(var(--base), #000000, 0.5);
+    background-color: darker(var(--base1));
+    color: mix(var(--base1), #000000, 0.5);
     border-color: var(--yellow1);
 }
 #hw-mon #hwmon-item.yellow label {
@@ -257,9 +239,9 @@
 
 
 #popup-window {
-    background-color: var(--module-bg);
+    background-color: var(--bg2);
     border-radius: 12px;
-    border: 1px solid var(--fg);
+    border: 1px solid var(--fg1);
     margin: 0 16px;
     padding: 0 16px;
 }
@@ -268,7 +250,7 @@
     text-shadow: 8px 8px 26px #000000;
 }
 #popup-window button {
-    background-color: var(--base);
+    background-color: var(--base1);
     border-radius: 12px;
     padding: 0 12px;
     margin: 6px;
@@ -279,7 +261,7 @@
 
 calendar {
     border-radius: 6px;
-    border: 1px solid var(--base);
+    border: 1px solid var(--base1);
     padding: 6px;
 }
 calendar.button {
@@ -291,8 +273,8 @@ calendar.button:hover {
   color: var(--red1);
 }
 calendar:selected {
-    background-color: var(--base);
-    box-shadow: inset 0 -1px 0 0 var(--fg);
+    background-color: var(--base1);
+    box-shadow: inset 0 -1px 0 0 var(--fg1);
 }
 #calendar-widget {
     box-shadow: 0 0 12px 1px var(--shadow);
@@ -303,12 +285,12 @@ calendar:selected {
 
 
 scrollbar {
-    background-color: darker(var(--base));
+    background-color: darker(var(--base1));
     border-radius: 12px;
     min-width: 4px;
 }
 slider {
-    background-color: var(--base);
+    background-color: var(--base1);
     border-radius: 12px;
     min-width: 4px;
 }
@@ -318,21 +300,21 @@ slider {
 }
 #todos #todos-scrollable {
     border-radius: 6px;
-    background-color: darker(var(--base));
+    background-color: darker(var(--base1));
     padding: 12px;
 }
 #todo-entry{ 
     padding: 3px;
     border-radius: 3px;
-    border: solid 1px var(--base);
+    border: solid 1px var(--base1);
 }
 #todos .done {
-    color: lighter(var(--base));
+    color: lighter(var(--base1));
 }
 
 #todos checkbutton {
-    background-color: darker(var(--base));
-    border: 1px solid var(--fg);
+    background-color: darker(var(--base1));
+    border: 1px solid var(--fg1);
 }
 
 
@@ -347,10 +329,10 @@ slider {
     font-family: "GeistMono Nerd Font";
     padding: 3px 6px 6px 0px;
     border-radius: 18px;
-    background-color: var(--bg);
+    background-color: var(--bg1);
 }
 #bar label {
-    color: var(--fg);
+    color: var(--fg1);
     padding: 0;
     margin: 0;
     text-shadow: 1px 1px 6px var(--glow);
@@ -371,7 +353,7 @@ slider {
 /* Workspaces */
 #bar #workspaces {
     border-radius: 6px;
-    background-color: var(--module-bg);
+    background-color: var(--bg2);
     margin-top: 6px;
 }
 
@@ -395,20 +377,20 @@ slider {
 }
 
 #workspaces>button.empty label {
-    color: var(--base);
+    color: var(--base1);
 }
 
 #bar .bar-clock label {
     font-size: 18px;
-    color: var(--fg);
+    color: var(--fg1);
 }
 #bar .bar-clock.hover label {
     color: var(--red1);
 }
 
 #bar #battery #circular-bar {
-    background-color: darker(var(--base));
-    color: mix(var(--base), #000000, 0.5);
+    background-color: darker(var(--base1));
+    color: mix(var(--base1), #000000, 0.5);
     border-color: var(--green1);
 }
 #bar #battery label {
@@ -418,19 +400,19 @@ slider {
 /* system tray */
 #bar #system-tray {
     border-radius: 6px;
-    background-color: var(--module-bg);
+    background-color: var(--bg2);
     margin-top: 6px;
 }
 menu {
     border: solid 2px;
     border-radius: 10px;
-    border-color: var(--base);
-    background-color: var(--module-bg);
+    border-color: var(--base1);
+    background-color: var(--bg2);
 }
 
 menu>menuitem {
     border-radius: 0px;
-    background-color: var(--module-bg);
+    background-color: var(--bg2);
     padding: 6px;
     margin-left: 2px;
     margin-right: 2px;
@@ -448,5 +430,5 @@ menu>menuitem:last-child {
 
 menu>menuitem:hover label {
     color: var(--red1);
-    background-color: var(--module-bg);
+    background-color: var(--bg2);
 }

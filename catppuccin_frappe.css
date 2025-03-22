@@ -24,3 +24,26 @@
 @define-color base #303446;
 @define-color mantle #292c3c;
 @define-color crust #232634;
+
+
+/* Common variables */
+:vars {
+    --bg1: alpha(@crust, 0.7); /* This looks like shit without blur*/
+    --bg2: alpha(@base, 0.7);
+    --fg1: @text;
+    --fg-dark1: @overlay0;
+    --base1: @base;
+    --blue1: @blue;
+    --blue2: @sapphire;
+    --red1: @red;
+    --red2: @mauve;
+    --green1: @green;
+    --green2: @sky;
+    --yellow1: @yellow;
+    --yellow2: @peach;
+
+    --shadow: mix(var(--bg1), #000000, 0.5);
+    --glow: lighter(var(--fg1));
+}
+
+
