@@ -1,7 +1,7 @@
 
 
 
-@import url("./catppuccin_frappe.css");
+@import url("./gruvbox.css");
 
 * {
     all: unset;
@@ -175,7 +175,7 @@
     font-size: 24px;
 }
 #media .control-button:hover label {
-    color: @red;
+    color: var(--red1);
 }
 
 #weather {
