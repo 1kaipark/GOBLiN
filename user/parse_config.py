@@ -30,16 +30,16 @@ def check_or_generate_config() -> bool:
 
 def set_theme(config: dict[str, str]) -> bool:
     try:
-        file = get_relative_path("../current_theme.css")
+        file = get_relative_path("../styles/current_theme.css")
         assert os.path.isfile(file)
-        if not os.path.isfile(get_relative_path(f"../{config['theme']}.css")):
+        if not os.path.isfile(get_relative_path(f"../styles/themes/{config['theme']}.css")):
             logger.warning("[Main] Theme not found, resorting to default")
             with open(file, "w+") as h:
-                h.write("""@import url("./gruvbox.css");""")
+                h.write("""@import url("./themes/gruvbox.css");""")
             return False
         
         with open(file, "w+") as h:
-            h.write(f"""@import url("./{config['theme']}.css");""")
+            h.write(f"""@import url("./themes/{config['theme']}.css");""")
         return True
     except Exception as e:
         logger.error(f"[Main] unable to set theme because of {e}")

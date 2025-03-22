@@ -175,8 +175,6 @@ class MediaWidget(Box):
             timestamp_to_sec(position),
             timestamp_to_sec(duration),
         )
-        print(position, duration)
-        print(position_sec, duration_sec)
         self._duration = duration_sec
         relative_position = position_sec / duration_sec
 

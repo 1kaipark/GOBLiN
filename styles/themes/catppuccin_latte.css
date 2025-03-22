@@ -1,0 +1,24 @@
+:vars {
+    --fg1: rgb(24, 25, 38);
+    --fg2: rgb(30, 32, 48);
+    --fg-dark1: rgb(24, 25, 38);
+    --fg-dark2: rgb(30, 32, 48);
+    --bg1: rgb(202, 211, 245);
+    --bg2: rgb(183, 189, 248);
+    --base1: rgb(54, 58, 79);
+    --base2: rgb(36, 39, 58);
+    --blue1: rgb(138, 173, 244);
+    --blue2: rgb(125, 196, 228);
+    --red1: rgb(237, 135, 150);
+    --red2: rgb(238, 153, 160);
+    --green1: rgb(166, 218, 149);
+    --green2: rgb(139, 213, 202);
+    --yellow1: rgb(238, 212, 159);
+    --yellow2: rgb(245, 169, 127);
+    --shadow1: rgb(24, 25, 38);
+    --shadow2: rgb(30, 32, 48);
+    --glow1: rgb(202, 211, 245);
+    --glow2: rgb(244, 219, 214);
+    --shadow: mix(var(--bg1), #000000, 0.5);
+    --glow: lighter(var(--fg1));
+}
