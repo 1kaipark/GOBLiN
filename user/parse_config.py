@@ -30,7 +30,7 @@ def check_or_generate_config() -> bool:
     if not os.path.isfile(USER_CONFIG_FILE):
         logger.info("[Main] Creating config file")
         with open(USER_CONFIG_FILE, "w+") as h:
-            json.dump(DEFAULT_CONFIG, h)
+            json.dump(DEFAULT_CONFIG, h, indent=4)
     if not os.path.isfile(USER_CONFIG_FILE):
         logger.error("[Main] Config file unable to be created. Using defaults")
     logger.info("[Main] Config file successfully found.")
