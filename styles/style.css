@@ -4,10 +4,8 @@
 @import url("./current_theme.css");
 
 * {
-    all: unset;
     color: var(--text);
     font-size: 14px;
-    font-family: "GeistMono Nerd Font", sans-serif;
     text-shadow: 1px 1px 6px var(--shadow);
 }
 
@@ -326,7 +324,6 @@ slider {
 #bar {
     all: unset;
     font-size: 14px;
-    font-family: "GeistMono Nerd Font";
     padding: 3px 6px 6px 0px;
     border-radius: 18px;
     background-color: var(--bg1);

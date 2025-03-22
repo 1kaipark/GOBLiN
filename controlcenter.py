@@ -142,6 +142,6 @@ class ControlCenter(Window):
 if __name__ == "__main__":
     control_center = ControlCenter()
     app = Application("control-center", control_center)
-    app.set_stylesheet_from_file(get_relative_path("./style.css"))
+    app.set_stylesheet_from_file(get_relative_path("./styles/style.css"))
 
     app.run()

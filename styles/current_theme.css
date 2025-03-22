@@ -1,1 +1,5 @@
 @import url("./themes/gruvbox.css");
+* {
+  all: unset;
+  font-family: JetBrainsMono Nerd Font;
+}

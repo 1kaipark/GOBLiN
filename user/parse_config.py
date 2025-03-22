@@ -15,6 +15,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "workspaces_wm": "hyprland",
     "theme": "gruvbox",
     "ws_icons":  ['일', '이', '삼', '사', '오', '육', '칠', '팔', '구', '십'],
+    "font": "JetBrainsMono Nerd Font",
 }
 
 # japanese icons
@@ -36,17 +37,21 @@ def check_or_generate_config() -> bool:
     return True
 
 def set_theme(config: dict[str, str]) -> bool:
+    theme_css_lines: list[str] = []
     try:
         file = get_relative_path("../styles/current_theme.css")
         assert os.path.isfile(file)
         if not os.path.isfile(get_relative_path(f"../styles/themes/{config['theme']}.css")):
             logger.warning("[Main] Theme not found, resorting to default")
-            with open(file, "w+") as h:
-                h.write("""@import url("./themes/gruvbox.css");""")
+            theme_css_lines.append("""@import url("./themes/gruvbox.css");""")
             return False
+        else:
+            theme_css_lines.append(f"""@import url("./themes/{config['theme']}.css");""")
+            
+        theme_css_lines += ["* {", "  all: unset;", f"  font-family: {config['font']};", "}"]
         
         with open(file, "w+") as h:
-            h.write(f"""@import url("./themes/{config['theme']}.css");""")
+            h.write("\n".join(theme_css_lines))
         return True
     except Exception as e:
         logger.error(f"[Main] unable to set theme because of {e}")

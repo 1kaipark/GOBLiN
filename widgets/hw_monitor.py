@@ -18,6 +18,8 @@ import psutil
 
 from utils.weather import WEATHER_CODES
 
+from user.parse_config import DEFAULT_CONFIG
+
 # https://github.com/Titaniumtown/pyfetch/blob/master/pyfetch.py
 import os, time
 from subprocess import Popen, PIPE, DEVNULL
@@ -49,23 +51,24 @@ class HWMonitor(Box):
         ram = psutil.virtual_memory()
         disk = psutil.disk_usage("/")
         while 1:
-           yield {
-               "cpu_usage": int(psutil.cpu_percent()),
-               "cpu_temp": int(psutil.sensors_temperatures()["thinkpad"][0].current),
-               "ram_percent": (ram.percent / 100),
-               "ram_usage": (ram.total - ram.available) / (1024**3),
-               "disk_percent": disk.percent / 100,
-               "disk_usage": disk.used / (1024**3),
-           }
+            yield {
+                "cpu_usage": int(psutil.cpu_percent()),
+#                "cpu_temp": int(psutil.sensors_temperatures()["thinkpad"][0].current),
+                "cpu_temp": int(
+                    list(psutil.sensors_temperatures().items())[0][1][0].current
+                ),
+                "ram_percent": (ram.percent / 100),
+                "ram_usage": (ram.total - ram.available) / (1024**3),
+                "disk_percent": disk.percent / 100,
+                "disk_usage": disk.used / (1024**3),
+            }
 
-           time.sleep(1)
-
-    cool_fabricator = Fabricator(poll_from=psutil_poll, stream=True, default_value={})
+            time.sleep(1)
 
 
     def __init__(self, **kwargs) -> None:
         super().__init__(orientation="h", h_align="center", h_expand=True, **kwargs)
-
+        
         self.cpu_progress_bar = CircularIndicator(
             name="hwmon-item",
             style_classes="blue",
@@ -87,31 +90,29 @@ class HWMonitor(Box):
         self.disk_progress_bar = CircularIndicator(
             name="hwmon-item",
             style_classes="green",
-            icon=Icons.DISK.value, 
+            icon=Icons.DISK.value,
         )
-        
+
         self._container = Box(h_align="fill", h_expand=True, spacing=36)
         self._container.add(self.cpu_progress_bar)
         self._container.add(self.cpu_temp_progress_bar)
         self._container.add(self.ram_progress_bar)
         self._container.add(self.disk_progress_bar)
-        
+
         self.add(self._container)
-        
-        self.cool_fabricator.connect(
-            "changed",
-            self.update_status
-        )
+
+        self.cool_fabricator = Fabricator(poll_from=self.psutil_poll, stream=True, default_value={})
+        self.cool_fabricator.connect("changed", self.update_status)
 
     def update_status(self, f: Fabricator, value: dict):
-        self.cpu_progress_bar.progress_bar.set_value(value['cpu_usage']/100)
-        self.cpu_progress_bar.label.set_label(str(value['cpu_usage'])+"%")
-        
-        self.cpu_temp_progress_bar.progress_bar.set_value(value['cpu_temp']/100)
-        self.cpu_temp_progress_bar.label.set_label(str(value['cpu_temp'])+"°C")
-        
-        self.ram_progress_bar.progress_bar.set_value(value['ram_percent'])
+        self.cpu_progress_bar.progress_bar.set_value(value["cpu_usage"] / 100)
+        self.cpu_progress_bar.label.set_label(str(value["cpu_usage"]) + "%")
+
+        self.cpu_temp_progress_bar.progress_bar.set_value(value["cpu_temp"] / 100)
+        self.cpu_temp_progress_bar.label.set_label(str(value["cpu_temp"]) + "°C")
+
+        self.ram_progress_bar.progress_bar.set_value(value["ram_percent"])
         self.ram_progress_bar.label.set_label(f"{value['ram_usage']:.1f}GB")
-        
-        self.disk_progress_bar.progress_bar.set_value(value['disk_percent'])
+
+        self.disk_progress_bar.progress_bar.set_value(value["disk_percent"])
         self.disk_progress_bar.label.set_label(f"{value['disk_usage']:.0f}GB")
