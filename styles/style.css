@@ -296,6 +296,9 @@ slider {
 #todos button:hover label {
     color: var(--red1);
 }
+#todos label {
+    color: var(--fg1);
+}
 #todos #todos-scrollable {
     border-radius: 6px;
     background-color: darker(var(--base1));
