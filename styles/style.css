@@ -283,6 +283,21 @@ calendar:selected {
 }
 
 
+#utils-notebook tabs tab {
+    padding: 0 12px 6px 12px;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    background-color: mix(var(--bg1), #000000, 0.01);
+}
+#utils-notebook tabs tab:hover label {
+    color: var(--red1);
+}
+#utils-notebook tabs tab:checked label {
+    color: var(--blue1);
+}
+#utils-notebook tabs tab:checked {
+    background-color: darker(var(--base1));
+}
 scrollbar {
     background-color: darker(var(--base1));
     border-radius: 12px;
@@ -303,7 +318,7 @@ slider {
 #todos #todos-scrollable {
     border-radius: 6px;
     background-color: darker(var(--base1));
-    padding: 12px;
+    padding: 6px;
 }
 #todo-entry{ 
     padding: 3px;
@@ -319,12 +334,33 @@ slider {
     border: 1px solid var(--fg1);
 }
 
-#utils-notebook tabs tab {
-    padding: 0 12px 6px 12px;
-    border-radius: 12px 0px;
+#todos,
+#timer {
     background-color: darker(var(--base1));
+    border-radius: 6px;
+    border-top-left-radius: 0;
+    padding: 12px;
+
 }
-#utils-notebook tabs tab:hover label {
+#timer button {
+    background-color: darker(var(--base1));
+    border-radius: 12px;
+    padding: 0 12px;
+}
+#timer button:hover label {
+    color: var(--red1);
+}
+#timer button:insensitive label {
+    color: lighter(var(--base1));
+}
+#timer #time-label label {
+    font-size: 36px;
+    color: var(--purple1);
+}
+#timer #add-time-button label {
+    color: var(--fg1);
+}
+#timer #add-time-button:hover label {
     color: var(--red1);
 }
 

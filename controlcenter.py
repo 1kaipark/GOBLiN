@@ -7,7 +7,7 @@ TODO : desparately needs a refactor but who cares lmao
 from fabric.widgets.box import Box
 from fabric.widgets.wayland import WaylandWindow as Window
 
-from fabric.utils import invoke_repeater
+from fabric.utils import invoke_repeater, exec_shell_command_async
 
 from fabric import Application
 from fabric.utils import get_relative_path
@@ -25,6 +25,7 @@ from widgets.network_controls import NetworkControls
 # from widgets.notis import NotificationCenter
 from widgets.calendar import CalendarWidget
 from widgets.todos import Todos
+from widgets.timer import TimerWidget
 
 
 from loguru import logger
@@ -114,7 +115,8 @@ class ControlCenter(Window):
             orientation="h", children=[self.power_menu], name="outer-box"
         )
 
-        self.todos = Todos(name="todos", h_expand=True, size=(366, 120))
+        self.todos = Todos(name="todos", h_expand=True, size=(348, 120))
+        self.timer = TimerWidget(name="timer", on_timer_finished=lambda *_: exec_shell_command_async("notify-send 'timer done.'"))
 
 #        self.row_3 = Box(
 #            orientation="h", children=[self.todos], name="outer-box", h_expand=True
@@ -122,7 +124,7 @@ class ControlCenter(Window):
 
         self.utils_notebook = Gtk.Notebook(name="utils-notebook")
         self.utils_notebook.append_page(self.todos, Gtk.Label("todos"))
-        self.utils_notebook.append_page(Gtk.Label("ima get around to it one day"), Gtk.Label("timer"))
+        self.utils_notebook.append_page(self.timer, Gtk.Label("timer"))
 
 
         self.row_3 = Box(
