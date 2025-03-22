@@ -13,7 +13,10 @@ from fabric.utils import (
 )
 
 
-from fabric.hyprland.widgets import ActiveWindow, Workspaces, WorkspaceButton
+from fabric.hyprland.widgets import (
+    Workspaces as HyprlandWorkspaces,
+    WorkspaceButton as HyprlandWorkspaceButton,
+)
 
 from controlcenter import ControlCenter
 
@@ -22,24 +25,33 @@ from user.commands import Commands
 from widgets.battery_single import BatterySingle
 from widgets.systray import SystemTray
 from widgets.calendar import CalendarWindow
+from widgets.sway import Workspaces as SwayWorkspaces
+
+from user.parse_config import check_or_generate_config, set_theme, USER_CONFIG_FILE, DEFAULT_CONFIG
+
+import json
+
+from loguru import logger
 
 class StatusBar(Window):
     def __init__(
         self,
+        config: dict = DEFAULT_CONFIG,
     ):
         super().__init__(
             name="bar",
             title="left-bar",
             layer="top",
             anchor="top left bottom left",
-            margin="10px 0px 10px 15px", # top right bottom left
+            margin="10px 0px 10px 15px",  # top right bottom left
             exclusivity="auto",
             visible=False,
             all_visible=False,
         )
+        self.config: dict = config
 
         self.start_menu = Button(
-#            label=" ", 
+            #            label=" ",
             label=Icons.SEND.value,
             on_clicked=self.show_control_center,
             name="bar-icon",
@@ -51,28 +63,30 @@ class StatusBar(Window):
 
         self.calendar_window = CalendarWindow(name="window")
         self.calendar_window.hide()
+        if self.config["workspaces_wm"] == "hyprland":
+            self.workspaces = HyprlandWorkspaces(
+                name="workspaces",
+                orientation="v",
+                h_align="center",
+                spacing=4,
+                buttons_factory=lambda ws_id: HyprlandWorkspaceButton(
+                    id=ws_id,
+                    label=["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"][
+                        ws_id - 1
+                    ],
+                ),
+            )
+        elif self.config["workspaces_wm"] == "sway":
+            self.workspaces = SwayWorkspaces(orientation="v")
 
-        self.workspaces = Workspaces(
-             name="workspaces",
-             orientation="v",
-             h_align="center",
-             spacing=4,
-             buttons_factory=lambda ws_id: WorkspaceButton(id=ws_id, label=['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'][ws_id - 1]),
-        )
- 
         self.battery = BatterySingle(name="battery", h_align="center")
 
-        self.system_tray = Box(name="system-tray", children=[SystemTray(pixel_size=18)], h_align="center")
-
-
-        self.date_time = DateTime(
-            style_classes="bar-clock",
-            formatters=("%H\n%M")
+        self.system_tray = Box(
+            name="system-tray", children=[SystemTray(pixel_size=18)], h_align="center"
         )
-        self.date_time.connect(
-            "clicked",
-            self.show_calendar_window
-        )
+
+        self.date_time = DateTime(style_classes="bar-clock", formatters=("%H\n%M"))
+        self.date_time.connect("clicked", self.show_calendar_window)
 
         self.notification_button = Button(
             label=Icons.NOTIFICATIONS.value,
@@ -84,7 +98,6 @@ class StatusBar(Window):
             self.toggle_notifications,
         )
 
-
         self.children = CenterBox(
             name="bar",
             orientation="v",
@@ -92,22 +105,16 @@ class StatusBar(Window):
                 name="bar-inner",
                 spacing=4,
                 orientation="v",
-                children=[
-                    self.start_menu,
-                    self.workspaces
-                ]
+                children=[self.start_menu, self.workspaces],
             ),
-
             center_children=Box(
                 name="bar-inner",
                 spacing=4,
                 orientation="v",
                 children=[
                     self.date_time,
-                ]
+                ],
             ),
-
-            
             end_children=Box(
                 name="bar-inner",
                 spacing=4,
@@ -116,10 +123,9 @@ class StatusBar(Window):
                     self.system_tray,
                     self.battery,
                     self.notification_button,
-                ]
+                ],
             ),
         )
-
 
         self.show_all()
 
@@ -134,8 +140,20 @@ class StatusBar(Window):
     def toggle_notifications(self, *_):
         exec_shell_command_async(Commands.NOTIFICATIONS.value)
 
+
 if __name__ == "__main__":
-    bar = StatusBar()
+    if check_or_generate_config():
+        with open(USER_CONFIG_FILE, "rb") as h:
+            config = json.load(h)
+    else:
+        config = DEFAULT_CONFIG
+
+    print(config)
+    
+    if set_theme(config):
+        logger.info("[Main] Theme {} set".format(config["theme"]))
+
+    bar = StatusBar(config=config)
     app = Application("bar", bar)
     app.set_stylesheet_from_file(get_relative_path("./style.css"))
 
