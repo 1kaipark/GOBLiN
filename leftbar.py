@@ -77,7 +77,7 @@ class StatusBar(Window):
                 ),
             )
         elif self.config["workspaces_wm"] == "sway":
-            self.workspaces = SwayWorkspaces(orientation="v")
+            self.workspaces = SwayWorkspaces(orientation="v", icons=self.config["ws_icons"])
 
         self.battery = BatterySingle(name="battery", h_align="center")
 

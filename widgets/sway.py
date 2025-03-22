@@ -33,7 +33,7 @@ class WorkspaceButton(Button):
         super().__init__(label=label, **kwargs)
 
 class Workspaces(Box):
-    def __init__(self, orientation, **kwargs) -> None:
+    def __init__(self, orientation, icons: Iterable[str] | None = None, **kwargs) -> None:
         super().__init__(
             name="workspaces",
             visible=True,
@@ -42,6 +42,7 @@ class Workspaces(Box):
             v_align="fill",
             **kwargs
         )
+        self.icons = icons
 
         self.buttons: dict[int, Button] = {}
 
@@ -79,7 +80,7 @@ class Workspaces(Box):
             )
 
         for ws in open_workspaces:
-            btn = WorkspaceButton(id=ws, icons=WS_ICONS, name="workspaces-button")
+            btn = WorkspaceButton(id=ws, icons=self.icons, name="workspaces-button")
             btn.connect("clicked", self.on_button_press)
             self.buttons[ws] = btn
             self._container.add(btn)

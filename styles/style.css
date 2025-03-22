@@ -355,7 +355,7 @@ slider {
 }
 #timer #time-label label {
     font-size: 36px;
-    color: var(--purple1);
+    color: var(--blue2);
 }
 #timer #add-time-button label {
     color: var(--fg1);
