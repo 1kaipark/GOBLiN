@@ -1,8 +1,15 @@
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib
+try:
+    from user.icons import Icons
+except ImportError:
+    from enum import Enum
+    class Icons(Enum):
+        MEDIA_PLAY = "󰐊"
+        MEDIA_PAUSE = "󰏤"
+        REBOOT = ""
 
-from user.icons import Icons
 
 from typing import Callable
 
@@ -12,13 +19,11 @@ class TimerWidget(Gtk.Box):
 
         self.on_timer_finished = on_timer_finished
 
-        # Timer state
-        self.time_left = 0  # Time left in seconds
-        self.is_running = False  # Whether the timer is running
-        self.timer_id = None  # ID of the GLib timer
+        self.time_left = 0  
+        self.is_running = False  
+        self.timer_id = None  
 
-        # Create a label to display the time
-        self.time_label = Gtk.Button(label="00:00")  # Updated to include hours
+        self.time_label = Gtk.Button(label="00:00")  
         self.time_label.set_name("time-label")
         self.time_label.connect(
             "clicked",
@@ -36,7 +41,6 @@ class TimerWidget(Gtk.Box):
         self.time_container.add_named(self.time_label, "time-label")
         self.time_container.add_named(self.time_entry, "time-entry")
 
-        # Create buttons for adding time
         time_buttons = [
             ("+30s", 30),
             ("+1m", 60),
@@ -45,7 +49,6 @@ class TimerWidget(Gtk.Box):
             ("+1hr", 3600),
         ]
 
-        # Arrange the add-time buttons in a box
         button_grid = Gtk.Box()
         button_grid.set_halign(Gtk.Align.CENTER)
         button_grid.set_hexpand(True)
@@ -55,9 +58,7 @@ class TimerWidget(Gtk.Box):
             button = Gtk.Button(label=label)
             button.set_name("add-time-button")
             button.connect("clicked", self.on_add_time, seconds)
-            button_grid.add(button)        # Arrange the add-time buttons in a grid
-
-        # Create control buttons
+            button_grid.add(button)        
         self.start_button = Gtk.Button(label=Icons.MEDIA_PLAY.value)
         self.start_button.set_name("button-icon")
         self.start_button.connect("clicked", self.on_start_clicked)
@@ -65,12 +66,12 @@ class TimerWidget(Gtk.Box):
         self.pause_button = Gtk.Button(label=Icons.MEDIA_PAUSE.value)
         self.pause_button.set_name("button-icon")
         self.pause_button.connect("clicked", self.on_pause_clicked)
-        self.pause_button.set_sensitive(False)  # Disabled by default
+        self.pause_button.set_sensitive(False)  
 
         self.reset_button = Gtk.Button(label=Icons.REBOOT.value)
         self.reset_button.set_name("button-icon")
         self.reset_button.connect("clicked", self.on_reset_clicked)
-        self.reset_button.set_sensitive(False)  # Disabled by default
+        self.reset_button.set_sensitive(False)
 
         control_box = Gtk.Box(spacing=6)
         control_box.pack_start(self.start_button, True, True, 0)
