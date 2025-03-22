@@ -115,10 +115,19 @@ class ControlCenter(Window):
         )
 
         self.todos = Todos(name="todos", h_expand=True, size=(366, 120))
+
+#        self.row_3 = Box(
+#            orientation="h", children=[self.todos], name="outer-box", h_expand=True
+#        )
+
+        self.utils_notebook = Gtk.Notebook(name="utils-notebook")
+        self.utils_notebook.append_page(self.todos, Gtk.Label("todos"))
+        self.utils_notebook.append_page(Gtk.Label("ima get around to it one day"), Gtk.Label("timer"))
+
+
         self.row_3 = Box(
-            orientation="h", children=[self.todos], name="outer-box", h_expand=True
+            children=[self.utils_notebook], name="outer-box",
         )
-        
         self.row_5 = Box(
             orientation="h", children=[self.media], name="outer-box", h_expand=True
         )

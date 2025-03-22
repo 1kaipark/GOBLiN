@@ -171,6 +171,7 @@
 
 #media .control-button label {
     font-size: 24px;
+    color: var(--fg1);
 }
 #media .control-button:hover label {
     color: var(--red1);
@@ -318,6 +319,14 @@ slider {
     border: 1px solid var(--fg1);
 }
 
+#utils-notebook tabs tab {
+    padding: 0 12px 6px 12px;
+    border-radius: 12px 0px;
+    background-color: darker(var(--base1));
+}
+#utils-notebook tabs tab:hover label {
+    color: var(--red1);
+}
 
 /* BAR CSS */ 
 #bar #bar-icon label {
