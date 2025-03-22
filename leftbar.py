@@ -71,7 +71,7 @@ class StatusBar(Window):
                 spacing=4,
                 buttons_factory=lambda ws_id: HyprlandWorkspaceButton(
                     id=ws_id,
-                    label=["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"][
+                    label=self.config["ws_icons"][
                         ws_id - 1
                     ],
                 ),

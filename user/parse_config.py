@@ -6,13 +6,20 @@ from loguru import logger
 
 from fabric.utils import get_relative_path
 
+from typing import Any
+
 USER_CONFIG_PATH = GLib.get_user_config_dir() + "/goblin"
 USER_CONFIG_FILE = USER_CONFIG_PATH + "/config.json"
 
-DEFAULT_CONFIG: dict[str, str] = {
+DEFAULT_CONFIG: dict[str, Any] = {
     "workspaces_wm": "hyprland",
     "theme": "gruvbox",
+    "ws_icons":  ['일', '이', '삼', '사', '오', '육', '칠', '팔', '구', '십'],
 }
+
+# japanese icons
+# ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
+# ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
 
 def check_or_generate_config() -> bool:
     print(USER_CONFIG_PATH)
