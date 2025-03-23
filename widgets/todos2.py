@@ -133,6 +133,7 @@ class Todos(Box):
         self.category_entry.set_completion(self.category_completion)
         self.category_entry.set_placeholder_text("category")
         self.category_entry.connect("key-press-event", self.on_key_press)
+        self.category_entry.connect("activate", self.add_todo)
 
         # treemodel for priority
         self.priority_store = Gtk.ListStore(str)
@@ -228,7 +229,6 @@ class Todos(Box):
             self.refresh_ui(group_by_mode=self.group_mode_store[self.group_mode_combo.get_active()][0])
             self.entry.set_text("")
             self.category_entry.set_text("")
-        self.details_revealer.set_reveal_child(False)
 
     def refresh_ui(self, group_by_mode: Literal["priority", "category"] = "priority"):
         for child in self.todo_list.get_children():
@@ -244,6 +244,8 @@ class Todos(Box):
                 print("------------")
                 print(sorted_todos[0]["tags"])
                 
+        sorted_todos.sort(key=lambda x: x["completed"])
+        
         for index, todo in enumerate(sorted_todos):
             todo_item = TodoItem(todo, index, spacing=6)
             todo_item.connect("removed", self.remove_todo)
@@ -255,11 +257,13 @@ class Todos(Box):
         self._todos[index]["completed"] = completed
         self.cache_todos()
 
-    def remove_todo(self, _, index):
-        print(index)
-        self._todos.pop(index)
+    def remove_todo(self, todo_item, index):
+        self._todos.pop(self._todos.index(todo_item._todo))
         self.cache_todos()
-        self.refresh_ui(group_by_mode=self.group_mode_store[self.group_mode_combo.get_active()][0])
+        mode = (None 
+                if len(self._todos) == 0
+                else self.group_mode_store[self.group_mode_combo.get_active()][0])
+        self.refresh_ui(group_by_mode=mode)
         self.cleanup_unused_categories()
 
     def clear_todos(self, widget):
