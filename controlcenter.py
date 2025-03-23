@@ -19,18 +19,23 @@ from widgets.power_menu import PowerMenu
 from widgets.hw_monitor import HWMonitor
 from widgets.controls import Controls
 from widgets.weather import Weather
-from widgets.launchers import Launchers 
+from widgets.launchers import Launchers
 from widgets.quote_display import QuoteDisplay
 from widgets.network_controls import NetworkControls
+
 # from widgets.notis import NotificationCenter
-from widgets.calendar import CalendarWidget
+from widgets.calendar_widget import CalendarWidget
 from widgets.todos import Todos
 from widgets.timer import TimerWidget
+from widgets.reminders import Reminders
+
+from widgets.popup import NotificationPopup
 
 
 from loguru import logger
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
@@ -50,17 +55,15 @@ CSS CLASSES
 * label-a through c (colors)
 """
 
-class ControlCenter(Window):
 
+class ControlCenter(Window):
     def on_key_press(self, _, event):
         if event.keyval == 65307:  # ESC key
             focused_widget = self.get_focus()
             if not isinstance(focused_widget, Gtk.Entry):
                 self.hide()
-                return True  
-        return False  
-
-    
+                return True
+        return False
 
     def __init__(self, **kwargs):
         super().__init__(
@@ -91,51 +94,63 @@ class ControlCenter(Window):
         #
         self.profile = Profile(name="profile")
 
-
         self.hwmon = HWMonitor(name="hw-mon")  # this goes in center_widgets
 
-        self.controls = Controls(name="controls", size=(300, -1))  # sliders for vol, brightness
+        self.controls = Controls(
+            name="controls", size=(300, -1)
+        )  # sliders for vol, brightness
 
         self.power_menu = PowerMenu()
         self.media = MediaWidget(name="media")
 
         self.header = Box(orientation="h", children=[self.profile])
         self.row_1 = Box(orientation="h", children=[self.hwmon], name="outer-box")
-        self.row_2 = Box(
-            orientation="h",
-            children=[
-                self.controls
-            ], 
-            name="outer-box"
-        )
-#        self.row_3 = Box(
-#            orientation="h", children=[self.fetch], name="outer-box"
-#        )
-        self.row_4 = Box(
-            orientation="h", children=[self.power_menu], name="outer-box"
-        )
+        self.row_2 = Box(orientation="h", children=[self.controls], name="outer-box")
+        #        self.row_3 = Box(
+        #            orientation="h", children=[self.fetch], name="outer-box"
+        #        )
+        self.row_4 = Box(orientation="h", children=[self.power_menu], name="outer-box")
 
         self.todos = Todos(name="todos", h_expand=True, size=(348, 120))
-        self.timer = TimerWidget(name="timer", on_timer_finished=lambda *_: exec_shell_command_async("notify-send 'timer done.'"))
+        self.timer = TimerWidget(
+            name="timer",
+            on_timer_finished=lambda *_: exec_shell_command_async(
+                "notify-send 'timer done.'"
+            ),
+        )
+        self.reminders = Reminders(name="reminders")
+        self.reminders.connect(
+            "reminder-due",
+            lambda _, name: exec_shell_command_async(
+                f"notify-send 'Reminders' {name} -u critical" 
+            )
+        )
 
-#        self.row_3 = Box(
-#            orientation="h", children=[self.todos], name="outer-box", h_expand=True
-#        )
+        #        self.row_3 = Box(
+        #            orientation="h", children=[self.todos], name="outer-box", h_expand=True
+        #        )
 
         self.utils_notebook = Gtk.Notebook(name="utils-notebook")
         self.utils_notebook.append_page(self.todos, Gtk.Label("todos"))
         self.utils_notebook.append_page(self.timer, Gtk.Label("timer"))
-
+        self.utils_notebook.append_page(self.reminders, Gtk.Label("reminders"))
 
         self.row_3 = Box(
-            children=[self.utils_notebook], name="outer-box",
+            children=[self.utils_notebook],
+            name="outer-box",
         )
         self.row_5 = Box(
             orientation="h", children=[self.media], name="outer-box", h_expand=True
         )
-        
 
-        self.widgets = [self.header, self.row_1, self.row_2, self.row_3, self.row_4, self.row_5]
+        self.widgets = [
+            self.header,
+            self.row_1,
+            self.row_2,
+            self.row_3,
+            self.row_4,
+            self.row_5,
+        ]
 
         self.add(
             Box(
@@ -149,6 +164,7 @@ class ControlCenter(Window):
 
     def toggle_visible(self) -> None:
         self.set_visible(not self.is_visible())
+
 
 if __name__ == "__main__":
     control_center = ControlCenter()

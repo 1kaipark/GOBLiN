@@ -309,7 +309,8 @@ slider {
     min-width: 4px;
 }
 
-#todos button:hover label {
+#todos button:hover label,
+#reminders button:hover label {
     color: var(--red1);
 }
 #todos label {
@@ -320,12 +321,14 @@ slider {
     background-color: darker(var(--base1));
     padding: 6px;
 }
+
+#reminders entry,
 #todo-entry{ 
     padding: 3px;
     border-radius: 3px;
     border: solid 1px var(--base1);
 }
-#todos .done {
+#todos .completed {
     color: lighter(var(--base1));
 }
 
@@ -335,7 +338,8 @@ slider {
 }
 
 #todos,
-#timer {
+#timer,
+#reminders {
     background-color: darker(var(--base1));
     border-radius: 6px;
     border-top-left-radius: 0;
@@ -476,4 +480,19 @@ menu>menuitem:last-child {
 menu>menuitem:hover label {
     color: var(--red1);
     background-color: var(--bg2);
+}
+
+
+#notification button label {
+    color: var(--fg-dark1);
+
+}
+
+#notification button:hover label {
+    color: var(--red1);
+}
+#notification .title {
+    color: var(--fg1);
+    font-size: 18px;
+    font-weight: bold;
 }

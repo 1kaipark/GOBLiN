@@ -1,11 +1,14 @@
+from fabric import Application
+
 from fabric.widgets.wayland import WaylandWindow
-from fabric.widgets.label import Label 
+from fabric.widgets.label import Label
 from fabric.widgets.button import Button
-from fabric.widgets.centerbox import CenterBox 
-from fabric.widgets.box import Box 
-from fabric.utils import exec_shell_command_async, invoke_repeater
+from fabric.widgets.centerbox import CenterBox
+from fabric.widgets.box import Box
+from fabric.utils import exec_shell_command_async, invoke_repeater, get_relative_path
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk
 
@@ -16,8 +19,6 @@ except:
     raise ImportError(
         "looks like we don't have gtk-layer-shell installed, make sure to install it first (as well as using wayland)"
     )
-
-
 
 
 class PopupWindow(WaylandWindow):
@@ -147,14 +148,15 @@ class PopupWindow(WaylandWindow):
                 self._base_margin.values(),
             )
         )
-        
-        
+
+
 class TimedPopup(PopupWindow):
     def __init__(self, parent, duration, **kwargs):
-        self.duration = duration 
+        self.duration = duration
         super().__init__(parent=parent, **kwargs)
 
         invoke_repeater(duration, lambda *_: self.destroy())
+
 
 class ConfirmationBox(PopupWindow):
     def __init__(self, parent, prompt: str, command: str, **kwargs):
@@ -164,16 +166,25 @@ class ConfirmationBox(PopupWindow):
         self.yes = Button(label="(y)es", on_clicked=self.execute)
         self.no = Button(label="(n)o", on_clicked=lambda *_: self.destroy())
 
-        buttonbox = CenterBox(orientation="h", start_children=[self.no], end_children=[self.yes], spacing=24)
-
+        buttonbox = CenterBox(
+            orientation="h",
+            start_children=[self.no],
+            end_children=[self.yes],
+            spacing=24,
+        )
 
         super().__init__(
             parent=parent,
             margin="10px 10px 10px 10px",
-            child=Box(children=[self.text, buttonbox], spacing=24, orientation="v", name="window-inner"),
+            child=Box(
+                children=[self.text, buttonbox],
+                spacing=24,
+                orientation="v",
+                name="window-inner",
+            ),
             keyboard_mode="exclusive",
             on_key_press_event=self.handle_key_press,
-            **kwargs
+            **kwargs,
         )
 
     def execute(self, *_):
@@ -181,7 +192,7 @@ class ConfirmationBox(PopupWindow):
         self.destroy()
 
     def set_text(self, text: str):
-        self.text.set_text(text) # beautiful and readable btw
+        self.text.set_text(text)  # beautiful and readable btw
 
     def handle_key_press(self, _, event):
         if event.keyval in [65307, 110, 78]:
@@ -190,4 +201,75 @@ class ConfirmationBox(PopupWindow):
             self.execute()
 
 
+class NotificationPopup(PopupWindow):
+    def __init__(self, parent, title: str, body: str = "", **kwargs):
+        super().__init__(
+            parent=parent, layer="overlay", margin="10px 10px 10px 10px", **kwargs
+        )
 
+        self._container = Box(
+            orientation="v",
+            spacing=24,
+            name="window",
+            h_align="start",
+        )
+
+        self._title_label = Label(
+            label=title,
+            style_classes="title"
+        )
+        self._body_label = Label(label=body, style_classes="body")
+
+        self._close_button = Button(label="")
+        self._close_button.connect(
+            "clicked",
+            self._close
+        )
+
+        self._header = Box(
+            orientation="h",
+            h_align="start",
+            h_expand=True,
+            spacing=12,
+        )
+        self._body = Box(
+            orientation="h",
+            h_align="start",
+            h_expand=True,
+            spacing=12,
+        )
+        self._header.pack_start(self._title_label, False, False, 0)
+        self._header.pack_end(self._close_button, False, False, 0)
+        self._header.set_size_request(200, -1)
+        
+        self._body.pack_start(self._body_label, False, False, 0)
+
+        self._container.pack_start(self._header, False, False, 0)
+        self._container.pack_start(self._body, False, False, 0)
+        
+        
+        self.add(self._container)
+        
+    def _close(self, *_):
+        self.destroy()
+
+
+if __name__ == "__main__":
+    app = Application(
+        "notitest",
+        WaylandWindow(
+            name="window",
+            anchor="center",
+            child=Button(
+                label="clickme",
+                on_clicked=lambda *_: NotificationPopup(
+                    parent=WaylandWindow(), title="hi", body="bro", name="notification", style="padding: 24px;",
+                ).show(),
+            ),
+            visible=True,
+            all_visible=True,
+            keyboard_mode="on-demand",
+        ),
+    )
+    app.set_stylesheet_from_file(get_relative_path("../styles/style.css"))
+    app.run()

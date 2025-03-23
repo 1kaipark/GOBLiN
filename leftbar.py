@@ -24,7 +24,7 @@ from user.icons import Icons
 from user.commands import Commands
 from widgets.battery_single import BatterySingle
 from widgets.systray import SystemTray
-from widgets.calendar import CalendarWindow
+from widgets.calendar_widget import CalendarWidget, CalendarWindow
 from widgets.sway import Workspaces as SwayWorkspaces
 
 from user.parse_config import check_or_generate_config, set_theme, USER_CONFIG_FILE, DEFAULT_CONFIG
