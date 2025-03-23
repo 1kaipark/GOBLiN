@@ -25,7 +25,7 @@ from widgets.network_controls import NetworkControls
 
 # from widgets.notis import NotificationCenter
 from widgets.calendar_widget import CalendarWidget
-from widgets.todos import Todos
+from widgets.todos2 import Todos
 from widgets.timer import TimerWidget
 from widgets.reminders import Reminders
 

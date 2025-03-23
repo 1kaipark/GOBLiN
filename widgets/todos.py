@@ -78,10 +78,10 @@ class TodoItem(Box):
 
 
 class Todos(Box):
-    def on_key_press(self, _, event):
+    def on_key_press(self, entry, event):
         if event.keyval == 65307:  # Escape key
             print("Esc in entry!!")
-            self.entry.set_text("")
+            entry.set_text("")
             self.scrolled_window.grab_focus()
             return True
         return False
@@ -97,6 +97,7 @@ class Todos(Box):
         self.entry.set_placeholder_text("todos")
         self.entry.connect("activate", self.add_todo)
         self.entry.connect("key-press-event", self.on_key_press)
+
 
         self.add_button = Gtk.Button(label="add")
         self.add_button.connect("clicked", self.add_todo)

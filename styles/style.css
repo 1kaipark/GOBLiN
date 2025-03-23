@@ -316,14 +316,22 @@ slider {
 #todos label {
     color: var(--fg1);
 }
-#todos #todos-scrollable {
+#todos #todos-scrollable,
+#reminders #reminders-scrollable {
     border-radius: 6px;
-    background-color: darker(var(--base1));
+    background-color: darker(var(--base2));
     padding: 6px;
 }
 
+#todos combobox {
+    background-color: darker(var(--base2));
+    border-radius: 6px;
+}
+#todos combobox arrow {
+}
+
 #reminders entry,
-#todo-entry{ 
+#todos entry { 
     padding: 3px;
     border-radius: 3px;
     border: solid 1px var(--base1);

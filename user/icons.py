@@ -35,7 +35,11 @@ class Icons(Enum):
     DISK = "󱛟"
     STOPWATCH = ""
     CALENDAR = "󰃭"
-
+    TAG = "󰓼"
+    FLAG = "󰈻"
+    UP = ""
+    DOWN = ""
+    CLOSE = ""
     
 
 
