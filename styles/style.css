@@ -351,6 +351,22 @@ slider {
 #todos .P4 {
     color: var(--green1);
 }
+
+#todos .category0 {
+    color: var(--green2);
+}
+#todos .category1 {
+    color: var(--blue2);
+}
+#todos .category2 {
+    color: var(--yellow2);
+}
+#todos .category3 {
+    color: var(--red2);
+}
+#todos .category4 {
+    color: var(--fg-dark1);
+}
 #todos checkbutton {
     background-color: darker(var(--base1));
     border: 1px solid var(--fg1);

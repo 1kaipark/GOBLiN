@@ -35,15 +35,15 @@ class Todo(TypedDict):
 
 class TodoItem(Box):
     @Signal
-    def removed(self, index: int) -> None: ...
+    def removed(self) -> None: ...
 
     @Signal
-    def toggled(self, index: int, completed: bool) -> None: ...
+    def toggled(self, completed: bool) -> None: ...
 
-    def __init__(self, todo: Todo, index: int, **kwargs):
+    def __init__(self, todo: Todo, category_class: str = "category1", **kwargs):
         super().__init__(**kwargs)
         self._todo = todo
-        self._index = index
+        self._category_class = category_class
 
         self.checkbox = Gtk.CheckButton(active=self._todo["completed"])
         self.label = Gtk.Label(label=self._todo["text"], xalign=0, name="todo-label")
@@ -56,18 +56,21 @@ class TodoItem(Box):
             label=category_icon + self._todo["category"], name="todo-category-label"
         )
         self.category_label.set_xalign(1)
+        self.category_label.get_style_context().add_class(self._category_class)
+
         self.priority_label = Gtk.Label(
             label=f"{Icons.FLAG.value} {self._todo['priority']}",
             xalign=0,
             name="todo-priority-label",
         )
-
+        self.priority_label.get_style_context().add_class(self._todo["priority"])
         if self._todo["completed"]:
             for label in [self.label, self.category_label, self.priority_label]:
                 label.get_style_context().add_class("completed")
+            self.priority_label.get_style_context().remove_class(self._todo["priority"])
+            self.category_label.get_style_context().remove_class(self._category_class)
+            self.label.get_style_context().remove_class("dick")
 
-        if self._todo["priority"] and not self._todo["completed"]:
-            self.priority_label.get_style_context().add_class(self._todo["priority"])
 
         self.checkbox.connect("toggled", self.on_toggle)
         self.remove_button = Gtk.Button(label=Icons.CLOSE.value)
@@ -87,7 +90,6 @@ class TodoItem(Box):
             self.priority_label.get_style_context().remove_class(self._todo["priority"])
 
         if completed:
-            style_context = self.priority_label.get_style_context()
             if self._todo["priority"]:
                 self.priority_label.get_style_context().remove_class(self._todo["priority"])
             for label in [self.label, self.category_label, self.priority_label]:
@@ -95,10 +97,10 @@ class TodoItem(Box):
         else:
             for label in [self.label, self.category_label, self.priority_label]:
                 label.get_style_context().remove_class("completed")
-        self.emit("toggled", self._index, self._todo["completed"])
+        self.emit("toggled", self._todo["completed"])
 
     def on_remove_clicked(self, _):
-        self.emit("removed", self._index)
+        self.emit("removed")
 
 
 class Todos(Box):
@@ -143,6 +145,10 @@ class Todos(Box):
         self.category_entry.set_placeholder_text("category")
         self.category_entry.connect("key-press-event", self.on_key_press)
         self.category_entry.connect("activate", self.add_todo)
+
+        # assign arbitrary style class to category?
+        self._category_class_map: dict[str, str] = {}
+        self._category_counter = 0
 
         # treemodel for priority
         self.priority_store = Gtk.ListStore(str)
@@ -253,19 +259,19 @@ class Todos(Box):
                 
         sorted_todos.sort(key=lambda x: x["completed"])
         
-        for index, todo in enumerate(sorted_todos):
-            todo_item = TodoItem(todo, index, spacing=6)
+        for todo in sorted_todos:
+            todo_item = TodoItem(todo, category_class=self.get_category_class(todo["category"]), spacing=6)
             todo_item.connect("removed", self.remove_todo)
             todo_item.connect("toggled", self.toggle_todo)
             self.todo_list.pack_start(todo_item, False, False, 0)
         self.todo_list.show_all()
 
-    def toggle_todo(self, todo_item, index, completed):
+    def toggle_todo(self, todo_item, completed):
         self._todos[self._todos.index(todo_item._todo)]["completed"] = completed
         self.cache_todos()
         self.refresh_ui(group_by_mode=self.group_mode_store[self.group_mode_combo.get_active()][0])
 
-    def remove_todo(self, todo_item, index):
+    def remove_todo(self, todo_item):
         self._todos.pop(self._todos.index(todo_item._todo))
         self.cache_todos()
         mode = (None 
@@ -328,6 +334,14 @@ class Todos(Box):
         if unused_categories:
             self._categories = used_categories
             self.update_category_store()
+
+    def get_category_class(self, category):
+        if category not in self._category_class_map:
+            self._category_class_map[category] = [f"category{i}" for i in range(5)][self._category_counter % 5]
+
+            self._category_counter += 1
+
+        return self._category_class_map[category]
 
 
 if __name__ == "__main__":
