@@ -28,9 +28,9 @@ TODOS_CACHE_PATH = GLib.get_user_cache_dir() + "/todos.txt"
 class Todo(TypedDict):
     text: str
     completed: bool
-    tags: List[str]
-    deadline: str  # Placeholder for future deadline feature
-    priority: str  # Added priority field
+    category: str  
+    deadline: str  
+    priority: str 
 
 
 class TodoItem(Box):
@@ -50,10 +50,10 @@ class TodoItem(Box):
         self.label.set_xalign(0)
         self.label.set_max_width_chars(20)
 
-        tag_icon = Icons.TAG.value + " " if self._todo["tags"] else ""
+        category_icon = Icons.TAG.value + " " if self._todo["category"] else ""
 
         self.category_label = Gtk.Label(
-            label=tag_icon + ", ".join(self._todo["tags"]), name="todo-category-label"
+            label=category_icon + self._todo["category"], name="todo-category-label"
         )
         self.category_label.set_xalign(1)
         self.priority_label = Gtk.Label(
@@ -65,6 +65,9 @@ class TodoItem(Box):
         if self._todo["completed"]:
             for label in [self.label, self.category_label, self.priority_label]:
                 label.get_style_context().add_class("completed")
+
+        if self._todo["priority"] and not self._todo["completed"]:
+            self.priority_label.get_style_context().add_class(self._todo["priority"])
 
         self.checkbox.connect("toggled", self.on_toggle)
         self.remove_button = Gtk.Button(label=Icons.CLOSE.value)
@@ -81,6 +84,12 @@ class TodoItem(Box):
         completed = checkbox.get_active()
         self._todo["completed"] = completed 
         if completed:
+            self.priority_label.get_style_context().remove_class(self._todo["priority"])
+
+        if completed:
+            style_context = self.priority_label.get_style_context()
+            if self._todo["priority"]:
+                self.priority_label.get_style_context().remove_class(self._todo["priority"])
             for label in [self.label, self.category_label, self.priority_label]:
                 label.get_style_context().add_class("completed")
         else:
@@ -217,7 +226,7 @@ class Todos(Box):
             new_todo = Todo(
                 text=todo_text,
                 completed=False,
-                tags=[category] if category else [],
+                category=category if category else "",
                 deadline="",
                 priority=priority,
             )
@@ -238,11 +247,9 @@ class Todos(Box):
         sorted_todos = self._todos.copy()
         match group_by_mode:
             case "priority":
-                sorted_todos.sort(key=lambda item: (item["priority"], item["tags"] == [], item["tags"]))
+                sorted_todos.sort(key=lambda item: (item["priority"], item["category"] == "", item["category"]))
             case "category":
-                sorted_todos.sort(key=lambda item: (item["tags"] == [], item["tags"], item["priority"]))
-                print("------------")
-                print(sorted_todos[0]["tags"])
+                sorted_todos.sort(key=lambda item: (item["category"] == "", item["category"], item["priority"]))
                 
         sorted_todos.sort(key=lambda x: x["completed"])
         
@@ -280,7 +287,7 @@ class Todos(Box):
             with open(TODOS_CACHE_PATH, "w") as cache:
                 for todo in self._todos:
                     cache.write(
-                        f"{todo['text']}|{todo['completed']}|{','.join(todo['tags'])}|{todo['deadline']}|{todo['priority']}\n"
+                        f"{todo['text']}|{todo['completed']}|{todo['category']}|{todo['deadline']}|{todo['priority']}\n"
                     )
         except Exception as e:
             logger.error("[TODOS] " + str(e))
@@ -290,17 +297,18 @@ class Todos(Box):
             with open(TODOS_CACHE_PATH, "r") as cache:
                 self._todos = []
                 for line in cache.readlines():
-                    text, completed, tags, deadline, priority = line.strip().split("|")
+                    text, completed, category, deadline, priority = line.strip().split("|")
                     self._todos.append(
                         Todo(
                             text=text,
                             completed=completed == "True",
-                            tags=tags.split(",") if tags else [],
+                            category=category,
                             deadline=deadline,
                             priority=priority,
                         )
                     )
-                    self._categories.update(tags.split(",") if tags else [])
+                    if category:
+                        self._categories.add(category)
                 self.update_category_store()
                 self.refresh_ui(group_by_mode=self.group_mode_store[self.group_mode_combo.get_active()][0])
         except Exception as e:
@@ -314,7 +322,8 @@ class Todos(Box):
     def cleanup_unused_categories(self):
         used_categories = set()
         for todo in self._todos:
-            used_categories.update(todo["tags"])
+            if todo["category"]:
+                used_categories.add(todo["category"])
         unused_categories = self._categories - used_categories
         if unused_categories:
             self._categories = used_categories

@@ -339,7 +339,18 @@ slider {
 #todos .completed {
     color: lighter(var(--base1));
 }
-
+#todos .P1 {
+    color: var(--red1);
+}
+#todos .P2 {
+    color: var(--yellow1);
+}
+#todos .P3 {
+    color: var(--blue1);
+}
+#todos .P4 {
+    color: var(--green1);
+}
 #todos checkbutton {
     background-color: darker(var(--base1));
     border: 1px solid var(--fg1);
