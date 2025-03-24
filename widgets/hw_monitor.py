@@ -63,7 +63,7 @@ class HWMonitor(Box):
                 "disk_usage": disk.used / (1024**3),
             }
 
-            time.sleep(1)
+            time.sleep(3)
 
 
     def __init__(self, **kwargs) -> None:
