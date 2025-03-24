@@ -48,9 +48,9 @@ class Indicator(Box):
 class HWMonitor(Box):
     @staticmethod
     def psutil_poll(f: Fabricator):
-        ram = psutil.virtual_memory()
-        disk = psutil.disk_usage("/")
         while 1:
+            ram = psutil.virtual_memory()
+            disk = psutil.disk_usage("/")
             yield {
                 "cpu_usage": int(psutil.cpu_percent()),
 #                "cpu_temp": int(psutil.sensors_temperatures()["thinkpad"][0].current),
