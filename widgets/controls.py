@@ -12,6 +12,8 @@ from user.icons import Icons
 
 from loguru import logger
 
+import subprocess
+
 class Controls(Box):
     def __init__(self, size: tuple[int, int] = (-1, -1), **kwargs) -> None:
         super().__init__(orientation="v", size=size, **kwargs)
@@ -59,6 +61,8 @@ class Controls(Box):
         volume = scale.value
         if 0 <= volume <= 100:
             self.audio.speaker.set_volume(volume)
+        self.audio.speaker.volume = scale.value
+#        subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{int(scale.value)}%"])
 
     def on_speaker_changed(self, *_):
         if not self.audio.speaker:

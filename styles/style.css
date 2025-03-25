@@ -284,10 +284,13 @@ calendar:selected {
 
 
 #utils-notebook tabs tab {
-    padding: 0 12px 6px 12px;
+    padding: 6px 24px 6px 18px;
     border-top-left-radius: 12px;
     border-top-right-radius: 12px;
     background-color: mix(var(--bg1), #000000, 0.01);
+}
+#utils-notebook tabs tab label {
+    font-size: 14px;
 }
 #utils-notebook tabs tab:hover label {
     color: var(--red1);
@@ -298,6 +301,17 @@ calendar:selected {
 #utils-notebook tabs tab:checked {
     background-color: darker(var(--base1));
 }
+
+#todos,
+#timer,
+#reminders {
+    background-color: darker(var(--base1));
+    border-radius: 6px;
+    border-top-left-radius: 0;
+    padding: 12px;
+
+}
+
 scrollbar {
     background-color: darker(var(--base1));
     border-radius: 12px;
@@ -310,14 +324,16 @@ slider {
 }
 
 #todos button:hover label,
-#reminders button:hover label {
+#reminders button:hover label,
+#bluetooth-menu button:hover label {
     color: var(--red1);
 }
 #todos label {
     color: var(--fg1);
 }
 #todos #todos-scrollable,
-#reminders #reminders-scrollable {
+#reminders #reminders-scrollable,
+#bluetooth-menu #bluetooth-scrollable {
     border-radius: 6px;
     background-color: darker(var(--base2));
     padding: 6px;
@@ -372,15 +388,6 @@ slider {
     border: 1px solid var(--fg1);
 }
 
-#todos,
-#timer,
-#reminders {
-    background-color: darker(var(--base1));
-    border-radius: 6px;
-    border-top-left-radius: 0;
-    padding: 12px;
-
-}
 #timer button {
     background-color: darker(var(--base1));
     border-radius: 12px;
@@ -401,6 +408,41 @@ slider {
 }
 #timer #add-time-button:hover label {
     color: var(--red1);
+}
+
+#network-big-button {
+    padding: 6px 12px;
+    border-radius: 24px;
+    background-color: darker(var(--base1));
+}
+#network-big-button .text-label {
+    color: var(--fg-dark1);
+}
+#network-big-button .icon {
+    font-size: 18px;
+}
+#network-big-button:hover .arrow {
+    color: var(--red1);
+}
+#bluetooth-menu,
+#wifi-menu {
+    background-color: darker(var(--base1));
+    border-radius: 6px;
+    padding: 12px;
+}
+#bluetooth-menu switch {
+    background-color: var(--base2);
+    border-radius: 12px;
+    padding: 0 2px;
+}
+#bluetooth-menu switch slider {
+    background-color: var(--fg-dark1);
+}
+list row {
+    border-radius: 12px;
+}
+list row:selected {
+    background-color: var(--blue2);
 }
 
 /* BAR CSS */ 

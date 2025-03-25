@@ -1,6 +1,9 @@
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib
+
+from fabric.core.service import Signal
+
 try:
     from user.icons import Icons
 except ImportError:
@@ -14,10 +17,12 @@ except ImportError:
 from typing import Callable
 
 class TimerWidget(Gtk.Box):
-    def __init__(self, on_timer_finished: Callable = lambda *_: 1, **kwargs):
+    @Signal 
+    def timer_finished(self) -> None: ...
+
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.on_timer_finished = on_timer_finished
 
         self.time_left = 0  
         self.is_running = False  
@@ -120,8 +125,8 @@ class TimerWidget(Gtk.Box):
             self.pause_button.set_sensitive(False)
             self.reset_button.set_sensitive(True)
 
-            self.on_timer_finished()
             # emit timer finished signal
+            self.emit("timer-finished")
             return False  
 
     def on_add_time(self, button, seconds):

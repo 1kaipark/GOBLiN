@@ -10,3 +10,5 @@
 
 
 
+# Attributions
+* quantumvoid0, FelipeFMA, RQuarx for [better-control](https://github.com/quantumvoid0/better-control)

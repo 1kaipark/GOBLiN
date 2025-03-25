@@ -74,4 +74,4 @@ class Profile(Box):
         self.add(self._labels_container)
 
     def update_status(self, f: Fabricator, value: float):
-        self.uptime.set_label(Icons.STOPWATCH.value + " " + str(value))
+        self.uptime.set_label(Icons.TIMER.value + " " + str(value))

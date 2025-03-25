@@ -263,7 +263,7 @@ if __name__ == "__main__":
             child=Button(
                 label="clickme",
                 on_clicked=lambda *_: NotificationPopup(
-                    parent=WaylandWindow(), title="hi", body="bro", name="notification", style="padding: 24px;",
+                    parent=WaylandWindow(), title="hi", body="bro", name="notification", style="padding: 24px;", anchor="top center"
                 ).show(),
             ),
             visible=True,

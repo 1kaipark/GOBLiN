@@ -4,6 +4,7 @@ a basic and minimal control center made in fabric/Gtk.
 TODO : desparately needs a refactor but who cares lmao
 """
 
+from os import wait
 from fabric.widgets.box import Box
 from fabric.widgets.wayland import WaylandWindow as Window
 
@@ -21,7 +22,7 @@ from widgets.controls import Controls
 from widgets.weather import Weather
 from widgets.launchers import Launchers
 from widgets.quote_display import QuoteDisplay
-from widgets.network_controls import NetworkControls
+from widgets.network_controls import NetworkControls, BluetoothMenu, WifiMenu
 
 # from widgets.notis import NotificationCenter
 from widgets.calendar_widget import CalendarWidget
@@ -31,6 +32,8 @@ from widgets.reminders import Reminders
 
 from widgets.popup import NotificationPopup
 
+from user.icons import Icons
+
 
 from loguru import logger
 
@@ -38,7 +41,6 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
-
 
 """
 CSS CLASSES
@@ -109,37 +111,38 @@ class ControlCenter(Window):
         #        self.row_3 = Box(
         #            orientation="h", children=[self.fetch], name="outer-box"
         #        )
-        self.row_4 = Box(orientation="h", children=[self.power_menu], name="outer-box")
 
         self.todos = Todos(name="todos", h_expand=True, size=(348, 120))
         self.timer = TimerWidget(
             name="timer",
-            on_timer_finished=lambda *_: exec_shell_command_async(
-                "notify-send 'timer done.'"
-            ),
         )
+        self.timer.connect("timer-finished", self.on_timer_finished)
         self.reminders = Reminders(name="reminders")
-        self.reminders.connect(
-            "reminder-due",
-            lambda _, name: exec_shell_command_async(
-                f"notify-send 'Reminders' {name} -u critical" 
-            )
-        )
+        self.reminders.connect("reminder-due", self.on_reminder_due)
 
         #        self.row_3 = Box(
         #            orientation="h", children=[self.todos], name="outer-box", h_expand=True
         #        )
 
+        self.wifi_widget = WifiMenu(name="wifi-menu")
+        self.bluetooth_widget = BluetoothMenu(name="bluetooth-menu")
+
         self.utils_notebook = Gtk.Notebook(name="utils-notebook")
-        self.utils_notebook.append_page(self.todos, Gtk.Label("todos"))
-        self.utils_notebook.append_page(self.timer, Gtk.Label("timer"))
-        self.utils_notebook.append_page(self.reminders, Gtk.Label("reminders"))
+        self.utils_notebook.append_page(self.todos, Gtk.Label(Icons.TODOS.value))
+        self.utils_notebook.append_page(self.timer, Gtk.Label(Icons.TIMER.value))
+        self.utils_notebook.append_page(
+            self.reminders, Gtk.Label(Icons.REMINDERS.value)
+        )
 
         self.row_3 = Box(
             children=[self.utils_notebook],
             name="outer-box",
         )
-        self.row_5 = Box(
+        
+        self.row_4 = Box(orientation="h", children=[NetworkControls()], name="outer-box", v_expand=True)
+        
+        self.row_5 = Box(orientation="h", children=[self.power_menu], name="outer-box")
+        self.row_6 = Box(
             orientation="h", children=[self.media], name="outer-box", h_expand=True
         )
 
@@ -150,6 +153,7 @@ class ControlCenter(Window):
             self.row_3,
             self.row_4,
             self.row_5,
+            self.row_6,
         ]
 
         self.add(
@@ -164,6 +168,24 @@ class ControlCenter(Window):
 
     def toggle_visible(self) -> None:
         self.set_visible(not self.is_visible())
+
+    def on_timer_finished(self, timer) -> None:
+        NotificationPopup(
+            parent=self,
+            title=Icons.TIMER.value,
+            body="Timer finished!",
+            name="window",
+            anchor="top center",
+        ).show()
+
+    def on_reminder_due(self, reminders, name: str) -> None:
+        NotificationPopup(
+            parent=self,
+            title=Icons.REMINDERS.value,
+            body=f"Reminder: {name}",
+            name="window",
+            anchor="top center",
+        ).show()
 
 
 if __name__ == "__main__":
