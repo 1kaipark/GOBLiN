@@ -9,7 +9,6 @@ from fabric.widgets.image import Image
 
 from fabric.utils import exec_shell_command_async, get_relative_path
 
-from widgets.dynamic_label import DynamicLabel
 
 import json
 import os

@@ -8,27 +8,20 @@ from os import wait
 from fabric.widgets.box import Box
 from fabric.widgets.wayland import WaylandWindow as Window
 
-from fabric.utils import invoke_repeater, exec_shell_command_async
 
 from fabric import Application
 from fabric.utils import get_relative_path
 
 from widgets.media import MediaWidget
 from widgets.profile import Profile
-from widgets.clock import Clock
 from widgets.power_menu import PowerMenu
 from widgets.hw_monitor import HWMonitor
-from widgets.controls import Controls
-from widgets.weather import Weather
-from widgets.launchers import Launchers
-from widgets.quote_display import QuoteDisplay
 from widgets.network_controls import NetworkControls, BluetoothMenu, WifiMenu
 
-# from widgets.notis import NotificationCenter
-from widgets.calendar_widget import CalendarWidget
 from widgets.todos import Todos
 from widgets.timer import TimerWidget
 from widgets.reminders import Reminders
+from widgets.controls import Controls
 
 from widgets.popup import NotificationPopup
 
@@ -118,7 +111,8 @@ class ControlCenter(Window):
         #            orientation="h", children=[self.fetch], name="outer-box"
         #        )
 
-        self.todos = Todos(name="todos", h_expand=True, size=(348, 120))
+        self.todos = Todos(name="todos", size=(348, 120))
+        self.todos.set_hexpand(True)
         self.timer = TimerWidget(
             name="timer",
         )

@@ -4,7 +4,6 @@ TODO checked ones to the bottom
 """
 
 from fabric import Application
-from fabric.widgets.box import Box
 from fabric.widgets.wayland import WaylandWindow
 
 from fabric.core.service import Signal
@@ -102,7 +101,7 @@ class TodoItem(Gtk.Box):
         self.emit("removed")
 
 
-class Todos(Box):
+class Todos(Gtk.Box):
     def on_key_press(self, entry, event):
         if event.keyval == 65307:  # Escape key
             print("Esc in entry!!")

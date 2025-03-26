@@ -1,11 +1,6 @@
-from fabric import Application
 from fabric.widgets.box import Box
-from fabric.widgets.label import Label
-from fabric.widgets.overlay import Overlay
-from fabric.widgets.eventbox import EventBox
 from fabric.widgets.datetime import Button, DateTime
 from fabric.widgets.centerbox import CenterBox
-from fabric.widgets.circularprogressbar import CircularProgressBar
 from fabric.widgets.wayland import WaylandWindow as Window
 from fabric.utils import (
     get_relative_path,

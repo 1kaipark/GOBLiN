@@ -1,6 +1,6 @@
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk, GLib, GObject
 
 from fabric.core.service import Signal
 
@@ -17,8 +17,9 @@ except ImportError:
 from typing import Callable
 
 class TimerWidget(Gtk.Box):
-    @Signal 
-    def timer_finished(self) -> None: ...
+    __gsignals__ = {
+        "timer-finished": (GObject.SignalFlags.RUN_FIRST, None, ())
+    }
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

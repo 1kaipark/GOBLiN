@@ -6,7 +6,6 @@ from fabric import Fabricator
 from fabric.utils import get_relative_path
 
 from widgets.circular_indicator import CircularIndicator
-from widgets.separator import Separator
 from user.icons import Icons
 
 import gi

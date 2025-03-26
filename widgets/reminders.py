@@ -7,7 +7,7 @@ from fabric.widgets.box import Box
 from fabric.core.service import Signal
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk, GLib, GObject
 
 from loguru import logger
 
@@ -16,8 +16,9 @@ import pickle
 REMINDERS_CACHE_PATH = GLib.get_user_cache_dir() + "/reminders.goblin"
 
 class Reminders(Box):
-    @Signal
-    def reminder_due(self, reminder_name: str) -> None: ...
+    __gsignals__ = {
+        "reminder-due": (GObject.SignalFlags.RUN_FIRST, None, (str, ))
+    }
 
     def on_key_press(self, entry, event) -> bool:
         if event.keyval == 65307:
