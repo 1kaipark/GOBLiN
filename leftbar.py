@@ -153,8 +153,8 @@ if __name__ == "__main__":
     if set_theme(config):
         logger.info("[Main] Theme {} set".format(config["theme"]))
 
-    bar = StatusBar(config=config)
-    app = Application("leftbar", bar)
+    leftbar = StatusBar(config=config)
+    app = Application("leftbar", leftbar)
     app.set_stylesheet_from_file(get_relative_path("./styles/style.css"))
 
     app.run()

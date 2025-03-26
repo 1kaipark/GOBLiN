@@ -58,11 +58,13 @@ class Controls(Box):
     def change_volume(self, scale):
         if not self.audio.speaker:
             return
+        scale.handler_block_by_func(self.change_volume)
         volume = scale.value
         if 0 <= volume <= 100:
             self.audio.speaker.set_volume(volume)
         self.audio.speaker.volume = scale.value
 #        subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{int(scale.value)}%"])
+        scale.handler_unblock_by_func(self.change_volume)
 
     def on_speaker_changed(self, *_):
         if not self.audio.speaker:
