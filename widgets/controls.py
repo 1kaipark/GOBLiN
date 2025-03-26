@@ -2,30 +2,66 @@ from fabric.widgets.box import Box
 
 from services import audio_service, brightness_service
 
-from widgets.scale_control import ScaleControl
-
 from fabric.utils import exec_shell_command_async
 
 from user.icons import Icons
 
 from loguru import logger
 
+from gi.repository import Gtk, GObject
+
+from typing import Literal
+
 import subprocess
+class ScaleControl(Gtk.Box):
+    __gsignals__ = {
+        "clicked": (GObject.SignalFlags.RUN_FIRST, None, ())
+    }
+    def __init__(
+        self,
+        label,
+        max_value: int = 100,
+        initial_value: int = 50,
+        orientation: Literal["h", "v"] = "h",
+        size: tuple[int, int] = (-1, -1),
+        **kwargs,
+    ) -> None:
+        __orientation = Gtk.Orientation.VERTICAL if orientation == "v" else Gtk.Orientation.HORIZONTAL
+        super().__init__(orientation=__orientation, **kwargs)
+        
+        self.scale = Gtk.Scale(orientation=__orientation)
+        self.scale.set_range(0, max_value)
+        self.scale.set_inverted((__orientation=="v"))
+        self.scale.set_halign(Gtk.Align.START)
+        self.scale.set_valign(Gtk.Align.START)
+        self.scale.set_size_request(*size)
+        self.scale.set_draw_value(False)
+        
+        self.label = Gtk.Button()
+        self.label.add(Gtk.Label(label=label))
+        self.label.connect(
+            "clicked",
+            lambda *_: self.emit("clicked")
+        )
+        
+        self.pack_start(self.label, False, False, 0)
+        self.pack_start(self.scale, False, False, 0)
+        
+        
+        
 
 class Controls(Box):
     def __init__(self, size: tuple[int, int] = (-1, -1), **kwargs) -> None:
         super().__init__(orientation="v", size=size, **kwargs)
 
-
         self.audio = audio_service
         self.audio.connect("notify::speaker", self.on_speaker_changed)
 
         self.brightness = brightness_service.get_initial()
-
         self.volume_box = ScaleControl(
             label=Icons.VOL.value,
             name="scale",
-            button_callback=lambda *_: exec_shell_command_async("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),
+#            button_callback=lambda *_: exec_shell_command_async("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),
             size=size,
         )
 

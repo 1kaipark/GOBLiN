@@ -17,7 +17,7 @@ from loguru import logger
 import tempfile
 import urllib.parse
 import urllib.request
-from gi.repository import GLib, Gtk, GdkPixbuf
+from gi.repository import GLib, Gtk
 
 from enum import Enum
 class MediaIcons(Enum):
@@ -52,16 +52,13 @@ class MediaWidget(Gtk.Box):
         stream=True,
     )
 
-    def __init__(self, art_size: int = 72, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        
-        self._art_size = art_size
 
         self._status = "Stopped"
         self._duration: int = 0
-        
-        self.art = Gtk.Image(name="player-art")
 
+        self.art_box = Box(name="player-art")
         self.title_label = Label(label="not playing", style_classes="title")
         self.artist_label = Label(label="", style_classes="artist")
 
@@ -114,7 +111,7 @@ class MediaWidget(Gtk.Box):
         self._controls_container.add(self._controls_buttons)
         self._controls_container.add(self._controls_progress)
 
-        self._container.attach(self.art, 0, 0, 1, 2)
+        self._container.attach(self.art_box, 0, 0, 1, 2)
         self._labels.add(self.artist_label)
         self._labels.add(self.title_label)
         self._container.attach(self._labels, 1, 0, 1, 1)
@@ -134,7 +131,7 @@ class MediaWidget(Gtk.Box):
             self._status = "Stopped"
             self.title_label.set_label("not playing")
             self.artist_label.set_label("")
-#            self.art_box.set_style(f"background-image: none;")
+            self.art_box.set_style(f"background-image: none;")
             for label in [self.position_label, self.duration_label]:
                 label.set_label("0:00")
             self.time_scale.set_value(0)
@@ -208,23 +205,9 @@ class MediaWidget(Gtk.Box):
 
     def _set_cover_image(self, image_path):
         if image_path and os.path.isfile(image_path):
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file(image_path)
-
-            width = pixbuf.get_width()
-            height = pixbuf.get_height()
-            size_to_crop = min(width, height)
-
-            x_offset = (width - size_to_crop) // 2
-            y_offset = (height - size_to_crop) // 2
-
-            cropped_pixbuf = pixbuf.new_subpixbuf(x_offset, y_offset, size_to_crop, size_to_crop)
-
-            resized_pixbuf = cropped_pixbuf.scale_simple(self._art_size, self._art_size, GdkPixbuf.InterpType.BILINEAR)
-            
-            self.art.set_from_pixbuf(resized_pixbuf)
-#            self.art_box.set_style(f"background-image: url('file://{image_path}')")
+            self.art_box.set_style(f"background-image: url('file://{image_path}')")
         else:
-            self.art.set_from_pixbuf(None)
+            self.art_box.set_style(f"background-image: none;")
             
     def toggle_play_pause(self, *_): 
         if self._status == "Stopped":

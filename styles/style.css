@@ -143,10 +143,9 @@
     min-width: 166px;
 }
 #player-art {
-    padding: 36px;
-    background-size: cover;
     background-color: darker(var(--base1));
     border-radius: 6px;
+    border: solid 1px var(--fg-dark1);
     margin: 8px;
 }
 #media .artist {
