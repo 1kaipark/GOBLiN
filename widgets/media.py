@@ -64,11 +64,18 @@ class MediaWidget(Gtk.Box):
 
         self.title_label = Label(label="not playing", style_classes="title")
         self.artist_label = Label(label="", style_classes="artist")
-
-        self.artist_label.set_line_wrap(True)
-        self.title_label.set_line_wrap(True)
-
-        self.position_label_temp = Label()
+        
+        self.title_scrollable = Gtk.ScrolledWindow(child=self.title_label)
+        self.title_scrollable.set_size_request(-1, 18)
+        self.title_scrollable.set_policy(
+            Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC
+        )
+        self.artist_scrollable = Gtk.ScrolledWindow(child=self.artist_label)
+        self.artist_scrollable.set_size_request(-1, 18)
+        self.artist_scrollable.set_policy(
+            Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC
+        )
+        
 
         self.play_pause = Button(label=Icons.MEDIA_PLAY.value, style_classes="control-button")
         self.next = Button(label=Icons.MEDIA_NEXT.value, style_classes="control-button")
@@ -115,8 +122,8 @@ class MediaWidget(Gtk.Box):
         self._controls_container.add(self._controls_progress)
 
         self._container.attach(self.art, 0, 0, 1, 2)
-        self._labels.add(self.artist_label)
-        self._labels.add(self.title_label)
+        self._labels.add(self.artist_scrollable)
+        self._labels.add(self.title_scrollable)
         self._container.attach(self._labels, 1, 0, 1, 1)
         self._container.attach(self._controls_container, 1, 1, 1, 1)
 

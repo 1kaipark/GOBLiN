@@ -128,7 +128,7 @@
     background-color: alpha(var(--base1), 0.7);
     padding: 3px 0;
     border-radius: 100px;
-    margin: 6px 12px;
+    margin: 3px 12px;
 }
 #media scale trough highlight {
     all: unset;
