@@ -33,12 +33,11 @@ class Todo(TypedDict):
     priority: str 
 
 
-class TodoItem(Box):
-    @Signal
-    def removed(self) -> None: ...
-
-    @Signal
-    def toggled(self, completed: bool) -> None: ...
+class TodoItem(Gtk.Box):
+    __gsignals__ = {
+        "removed": (GObject.SignalFlags.RUN_FIRST, None, ()),
+        "toggled": (GObject.SignalFlags.RUN_FIRST, None, (bool, ))
+    }
 
     def __init__(self, todo: Todo, category_class: str = "category1", **kwargs):
         super().__init__(**kwargs)
