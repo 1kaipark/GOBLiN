@@ -1,8 +1,6 @@
 from fabric.widgets.box import Box 
 
-from fabric.audio.service import Audio
-
-from services.brightness import Brightness
+from services import audio_service, brightness_service
 
 from widgets.scale_control import ScaleControl
 
@@ -19,21 +17,21 @@ class Controls(Box):
         super().__init__(orientation="v", size=size, **kwargs)
 
 
-        self.audio = Audio(on_speaker_changed=self.on_speaker_changed)
+        self.audio = audio_service
         self.audio.connect("notify::speaker", self.on_speaker_changed)
 
-        self.brightness = Brightness().get_initial()
+        self.brightness = brightness_service.get_initial()
 
         self.volume_box = ScaleControl(
             label=Icons.VOL.value,
-            name="scale-a",
+            name="scale",
             button_callback=lambda *_: exec_shell_command_async("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),
             size=size,
         )
 
         self.volume_box.scale.connect("value-changed", self.change_volume)
 
-        self.brightness_box = ScaleControl(label=Icons.BRIGHTNESS.value, name="scale-a", max_value=255, size=size)
+        self.brightness_box = ScaleControl(label=Icons.BRIGHTNESS.value, name="scale", max_value=255, size=size)
 
         self.brightness_box.scale.connect(
             "change-value", self.update_brightness
@@ -43,8 +41,8 @@ class Controls(Box):
             "screen", self.on_brightness_changed
         )
 
-        self.add(self.volume_box)
-        self.add(self.brightness_box)
+        self.pack_start(self.volume_box, True, True, 0)
+        self.pack_start(self.brightness_box, True, True, 0)
 
         self.sync_with_audio()
         self.brightness_box.scale.set_value(self.brightness.screen_brightness)

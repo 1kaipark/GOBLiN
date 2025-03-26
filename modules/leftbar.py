@@ -18,7 +18,8 @@ from fabric.hyprland.widgets import (
     WorkspaceButton as HyprlandWorkspaceButton,
 )
 
-from controlcenter import ControlCenter
+from modules.control_center import ControlCenter
+from modules.osd import OSD
 
 from user.icons import Icons
 from user.commands import Commands
@@ -33,7 +34,7 @@ import json
 
 from loguru import logger
 
-class StatusBar(Window):
+class LeftBar(Window):
     def __init__(
         self,
         config: dict = DEFAULT_CONFIG,
@@ -59,10 +60,15 @@ class StatusBar(Window):
         )
 
         self.control_center = ControlCenter()
+        self.control_center.connect("notify_hide", self.on_cc_hidden)
         self.control_center.hide()
+        
+        self.osd = OSD()
+        self.osd.hide()
 
         self.calendar_window = CalendarWindow(name="window")
         self.calendar_window.hide()
+        
         if self.config["workspaces_wm"] == "hyprland":
             self.workspaces = HyprlandWorkspaces(
                 name="workspaces",
@@ -129,8 +135,15 @@ class StatusBar(Window):
 
         self.show_all()
 
+    def on_cc_hidden(self, *_):
+        self.osd.suppressed = False
+
     def show_control_center(self, *_):
         self.control_center.set_visible(not self.control_center.is_visible())
+        if self.control_center.is_visible():
+            self.osd.suppressed = True 
+        else:
+            self.osd.suppressed = False
         self.calendar_window.hide()
 
     def show_calendar_window(self, *_):
@@ -141,20 +154,4 @@ class StatusBar(Window):
         exec_shell_command_async(Commands.NOTIFICATIONS.value)
 
 
-if __name__ == "__main__":
-    if check_or_generate_config():
-        with open(USER_CONFIG_FILE, "rb") as h:
-            config = json.load(h)
-    else:
-        config = DEFAULT_CONFIG
 
-    print(config)
-    
-    if set_theme(config):
-        logger.info("[Main] Theme {} set".format(config["theme"]))
-
-    leftbar = StatusBar(config=config)
-    app = Application("leftbar", leftbar)
-    app.set_stylesheet_from_file(get_relative_path("./styles/style.css"))
-
-    app.run()

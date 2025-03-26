@@ -90,14 +90,14 @@
     color: var(--red1);
 }
 
-#scale-a {
+#scale {
     background-color: mix(var(--base1), #000000, 0.2);
-    padding: 3px 0;
+    padding: 2px 0;
     border-radius: 100px;
     margin: 6px 12px;
 }
 
-#scale-a slider {
+#scale slider {
     background-color: mix(var(--green2), var(--base1), 0.1);
     box-shadow: 0 0 6px 1px var(--shadow);
     border-radius: 100%;
@@ -105,17 +105,17 @@
     min-width: 18px;
 }
 
-#scale-a label {
+#scale label {
     color: var(--green2);
     font-size: 18px;
     margin: 0 12px;
 }
-#scale-a scale trough highlight {
+#scale scale trough highlight {
     all: unset;
     background-color: var(--green2);
     border-radius: 8px;
 }
-#scale-a scale trough {
+#scale scale trough {
     all: unset;
     background-color: darker(var(--base1));
     border-radius: 8px;
@@ -573,3 +573,44 @@ menu>menuitem:hover label {
     font-size: 18px;
     font-weight: bold;
 }
+
+
+/* OSDS */ 
+#osd-container {
+    background-color: mix(var(--base1), #000000, 0.2);
+    padding: 10px 5px;
+    border-radius: 24px;
+}
+
+#osd-container scale {
+    background-color: mix(var(--base1), #000000, 0.2);
+    padding: 2px 0;
+    border-radius: 100px;
+    margin: 6px 12px;
+}
+
+#osd-container scale slider {
+    background-color: mix(var(--blue2), var(--base1), 0.1);
+    box-shadow: 0 0 6px 1px var(--shadow);
+    border-radius: 100%;
+    min-height: 18px;
+    min-width: 18px;
+}
+
+#osd-container label {
+    color: var(--blue2);
+    font-size: 18px;
+    margin: 0 18px 0 12px;
+}
+#osd-container scale trough highlight {
+    all: unset;
+    background-color: var(--blue2);
+    border-radius: 8px;
+}
+#osd-container scale trough {
+    all: unset;
+    background-color: darker(var(--base1));
+    border-radius: 8px;
+    margin: 3px 6px;
+}
+

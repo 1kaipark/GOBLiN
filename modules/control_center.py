@@ -40,7 +40,7 @@ from loguru import logger
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+from gi.repository import Gtk, GObject
 
 """
 CSS CLASSES
@@ -59,10 +59,16 @@ CSS CLASSES
 
 
 class ControlCenter(Window):
+
+    __gsignals__ = {
+        "notify_hide": (GObject.SignalFlags.RUN_FIRST, None, (bool, ))
+    }
+
     def on_key_press(self, _, event):
         if event.keyval == 65307:  # ESC key
             focused_widget = self.get_focus()
             if not isinstance(focused_widget, Gtk.Entry):
+                self.emit("notify_hide", False)
                 self.hide()
                 return True
         return False
