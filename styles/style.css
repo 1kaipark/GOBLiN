@@ -23,24 +23,17 @@
 }
 
 #profile-pic {
-    background-color: transparent;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: cover;
-    min-height: 40px;
-    min-width: 40px;
     border-radius: 4px;
     border: solid 1px var(--fg1);
-    padding: 33px;
     margin: 12px;
-    margin-right: 24px;
+    margin-bottom: 2px;
 }
 
 #profile label.username {
     font-size: 20px;
     color: var(--fg1);
 }
-#profile button.date label {
+#profile label.date {
     font-size: 14px;
     color: var(--blue2);
 }
