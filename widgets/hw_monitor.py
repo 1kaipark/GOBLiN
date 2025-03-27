@@ -91,10 +91,9 @@ class HWMonitor(Gtk.Box):
                 "disk_usage": disk.used / (1024**3),
             }
 
-            # Thread-safe UI update
-            GLib.idle_add(self.update_ui, value)
+            GLib.idle_add(self.update_ui, value) # update UI in main thread
 
-            time.sleep(3)  # Poll every 3 seconds
+            time.sleep(1)  
 
     def update_ui(self, value: dict):
         self.cpu_progress_bar.progress_bar.set_value(value["cpu_usage"] / 100)
