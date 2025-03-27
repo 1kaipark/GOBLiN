@@ -36,15 +36,15 @@ class ScaleControl(Gtk.Box):
         self.scale.set_valign(Gtk.Align.START)
         self.scale.set_size_request(*size)
         self.scale.set_draw_value(False)
+
         
-        self.label = Gtk.Button()
-        self.label.add(Gtk.Label(label=label))
-        self.label.connect(
+        self.button = Gtk.Button(label=label)
+        self.button.connect(
             "clicked",
             lambda *_: self.emit("clicked")
         )
         
-        self.pack_start(self.label, False, False, 0)
+        self.pack_start(self.button, False, False, 0)
         self.pack_start(self.scale, False, False, 0)
         
         
@@ -56,6 +56,7 @@ class Controls(Box):
 
         self.audio = audio_service
         self.audio.connect("notify::speaker", self.on_speaker_changed)
+        self.audio.connect("changed", self.check_mute)
 
         self.brightness = brightness_service.get_initial()
         self.volume_box = ScaleControl(
@@ -63,6 +64,7 @@ class Controls(Box):
             name="scale",
             size=size,
         )
+        self.volume_box.connect("clicked", lambda *_: exec_shell_command_async("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"))
 
         self.volume_box.scale.connect("change-value", self.change_volume)
 
@@ -109,9 +111,9 @@ class Controls(Box):
             return
 
         if self.audio.speaker.muted:
-            self.volume_box.label.set_label(Icons.VOL_MUTE.value)
+            self.volume_box.button.set_label(Icons.VOL_MUTE.value)
         else:
-            self.volume_box.label.set_label(Icons.VOL.value)
+            self.volume_box.button.set_label(Icons.VOL.value)
 
         volume = round(self.audio.speaker.volume)
         self.volume_box.scale.set_value(volume)
@@ -122,4 +124,13 @@ class Controls(Box):
     def on_brightness_changed(self, sender, value, *_):
         logger.info(sender.screen_brightness)
         self.brightness_box.scale.set_value(sender.screen_brightness)
+
+    def check_mute(self, audio):
+        if not audio.speaker:
+            return
+        if audio.speaker.muted:
+            self.volume_box.button.set_label(Icons.VOL_MUTE.value)
+        else:
+            
+            self.volume_box.button.set_label(Icons.VOL.value)
 

@@ -15,7 +15,7 @@ from typing import Literal
 from utils.monitors import get_current_gdk_monitor_id
 
 class AudioOSDContainer(Gtk.Box):
-    __gsignals__ = {"volume-changed": (GObject.SignalFlags.RUN_FIRST, None, (int,))}
+    __gsignals__ = {"volume-changed": (GObject.SignalFlags.RUN_FIRST, None, ())}
 
     def __init__(self, **kwargs):
         super().__init__(name="osd-container", orientation=Gtk.Orientation.VERTICAL, **kwargs)
@@ -34,6 +34,7 @@ class AudioOSDContainer(Gtk.Box):
 
         self.audio = audio_service
         self.audio.connect("notify::speaker", self.on_speaker_changed)
+        self.audio.connect("changed", self.check_mute)
 
     def on_speaker_changed(self, audio, _):
         if speaker := self.audio.speaker:
@@ -42,7 +43,7 @@ class AudioOSDContainer(Gtk.Box):
             
     def update_volume(self, speaker, idkwtftsislmao):
         speaker.handler_block_by_func(self.update_volume)
-        self.emit("volume-changed", 0)
+        self.emit("volume-changed")
         if not self.audio.speaker:
             return
         if self.audio.speaker.muted:
@@ -52,6 +53,17 @@ class AudioOSDContainer(Gtk.Box):
         volume = round(self.audio.speaker.volume)
         self.scale.set_value(volume)
         speaker.handler_unblock_by_func(self.update_volume)
+
+    def check_mute(self, audio):
+        if not audio.speaker:
+            return
+        self.emit("volume-changed")
+        if audio.speaker.muted:
+            self.icon.set_text(Icons.VOL_MUTE.value)
+        else:
+            
+            self.icon.set_text(Icons.VOL.value)
+
 
 
 class BrightnessOSDContainer(Gtk.Box):
@@ -136,7 +148,7 @@ class OSD(Window):
             self._hide
         )
         
-    def show_audio_osd(self, osd, _):
+    def show_audio_osd(self, osd):
         self.show_box(box_to_show="audio")
 
 if __name__ == "__main__":
