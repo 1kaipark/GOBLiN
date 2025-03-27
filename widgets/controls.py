@@ -61,11 +61,10 @@ class Controls(Box):
         self.volume_box = ScaleControl(
             label=Icons.VOL.value,
             name="scale",
-#            button_callback=lambda *_: exec_shell_command_async("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),
             size=size,
         )
 
-        self.volume_box.scale.connect("value-changed", self.change_volume)
+        self.volume_box.scale.connect("change-value", self.change_volume)
 
         self.brightness_box = ScaleControl(label=Icons.BRIGHTNESS.value, name="scale", max_value=255, size=size)
 
@@ -89,16 +88,14 @@ class Controls(Box):
         volume = round(self.audio.speaker.volume)
         self.volume_box.scale.set_value(volume)
 
-    def change_volume(self, scale):
+    def change_volume(self, _, __, volume):
         if not self.audio.speaker:
             return
-        scale.handler_block_by_func(self.change_volume)
-        volume = scale.value
+#        volume = scale.get_value()
+        
         if 0 <= volume <= 100:
             self.audio.speaker.set_volume(volume)
-        self.audio.speaker.volume = scale.value
 #        subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{int(scale.value)}%"])
-        scale.handler_unblock_by_func(self.change_volume)
 
     def on_speaker_changed(self, *_):
         if not self.audio.speaker:
@@ -119,8 +116,8 @@ class Controls(Box):
         volume = round(self.audio.speaker.volume)
         self.volume_box.scale.set_value(volume)
 
-    def update_brightness(self, _, __, moved_pos):
-        self.brightness.screen_brightness = moved_pos
+    def update_brightness(self, scale, __, brightness):
+        self.brightness.screen_brightness = brightness
 
     def on_brightness_changed(self, sender, value, *_):
         logger.info(sender.screen_brightness)
