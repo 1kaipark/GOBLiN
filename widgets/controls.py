@@ -21,7 +21,6 @@ class ScaleControl(Gtk.Box):
         self,
         label,
         max_value: int = 100,
-        initial_value: int = 50,
         orientation: Literal["h", "v"] = "h",
         size: tuple[int, int] = (-1, -1),
         **kwargs,

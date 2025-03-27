@@ -1,10 +1,4 @@
 
-from fabric.widgets.box import Box
-from fabric.widgets.label import Label
-
-
-from fabric.utils import get_relative_path
-
 from widgets.circular_indicator import CircularIndicator
 from user.icons import Icons
 
@@ -15,14 +9,8 @@ from gi.repository import Gtk, GLib
 
 import psutil
 
-from utils.weather import WEATHER_CODES
-
-from user.parse_config import DEFAULT_CONFIG
-
 # https://github.com/Titaniumtown/pyfetch/blob/master/pyfetch.py
-import os, time
-from subprocess import Popen, PIPE, DEVNULL
-
+import time
 import threading
 
 
