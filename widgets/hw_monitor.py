@@ -95,9 +95,9 @@ class HWMonitor(Gtk.Box):
             value = {
                 "cpu_usage": int(psutil.cpu_percent()),
                 "cpu_temp": int(temp),
-                "ram_percent": ram.percent,
+                "ram_percent": ram.percent / 100,
                 "ram_usage": (ram.total - ram.available) / (1024**3),
-                "disk_percent": disk.percent,
+                "disk_percent": disk.percent / 100,
                 "disk_usage": disk.used / (1024**3),
             }
 
