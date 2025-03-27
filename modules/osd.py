@@ -12,6 +12,8 @@ from gi.repository import GObject, Gtk, GLib
 
 from typing import Literal
 
+from utils.monitors import get_current_gdk_monitor_id
+
 class AudioOSDContainer(Gtk.Box):
     __gsignals__ = {"volume-changed": (GObject.SignalFlags.RUN_FIRST, None, (int,))}
 
@@ -114,6 +116,7 @@ class OSD(Window):
         if self.suppressed:
             return
         
+        self.monitor = get_current_gdk_monitor_id()
         
         match box_to_show:
             case "audio":
