@@ -1,7 +1,7 @@
-
 from fabric.widgets.box import Box
 from fabric.widgets.label import Label
 
+from fabric import Fabricator
 
 from fabric.utils import get_relative_path
 
@@ -11,7 +11,7 @@ from user.icons import Icons
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk
 
 import psutil
 
@@ -23,26 +23,50 @@ from user.parse_config import DEFAULT_CONFIG
 import os, time
 from subprocess import Popen, PIPE, DEVNULL
 
-import threading
+
+def run_command(command):
+    process = Popen(
+        command, stdout=PIPE, universal_newlines=True, shell=True, stderr=DEVNULL
+    )
+    stdout, stderr = process.communicate()
+    del stderr
+    return stdout
 
 
-
-class Indicator(Gtk.Box):
+class Indicator(Box):
     def __init__(self, icon: str, **kwargs):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
+        super().__init__(orientation="v", **kwargs)
 
-        self.icon = Gtk.Label(label=icon)
-        self.label = Gtk.Label()
+        self.icon = Label(label=icon)
+        self.label = Label()
 
         self.add(self.icon)
         self.add(self.label)
 
 
-class HWMonitor(Gtk.Box):
+class HWMonitor(Box):
+    @staticmethod
+    def psutil_poll(f: Fabricator):
+        while 1:
+            ram = psutil.virtual_memory()
+            disk = psutil.disk_usage("/")
+            yield {
+                "cpu_usage": int(psutil.cpu_percent()),
+#                "cpu_temp": int(psutil.sensors_temperatures()["thinkpad"][0].current),
+                "cpu_temp": int(
+                    list(psutil.sensors_temperatures().items())[0][1][0].current
+                ),
+                "ram_percent": (ram.percent / 100),
+                "ram_usage": (ram.total - ram.available) / (1024**3),
+                "disk_percent": disk.percent / 100,
+                "disk_usage": disk.used / (1024**3),
+            }
+
+            time.sleep(3)
+
+
     def __init__(self, **kwargs) -> None:
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, **kwargs)
-        self.set_halign(Gtk.Align.CENTER)
-        self.set_hexpand(True)
+        super().__init__(orientation="h", h_align="center", h_expand=True, **kwargs)
         
         self.cpu_progress_bar = CircularIndicator(
             name="hwmon-item",
@@ -68,47 +92,18 @@ class HWMonitor(Gtk.Box):
             icon=Icons.DISK.value,
         )
 
-        self._container = Gtk.Box(spacing=36)
-        self._container.set_halign(Gtk.Align.FILL)
-        self._container.set_hexpand(True)
-        self._container.pack_start(self.cpu_progress_bar, True, True, 0)
-        self._container.pack_start(self.cpu_temp_progress_bar, True, True, 0)
-        self._container.pack_start(self.ram_progress_bar, True, True, 0)
-        self._container.pack_start(self.disk_progress_bar, True, True, 0)
+        self._container = Box(h_align="fill", h_expand=True, spacing=36)
+        self._container.add(self.cpu_progress_bar)
+        self._container.add(self.cpu_temp_progress_bar)
+        self._container.add(self.ram_progress_bar)
+        self._container.add(self.disk_progress_bar)
 
         self.add(self._container)
 
-        self._running = True 
-        thread = threading.Thread(target=self.psutil_poll, daemon=True)
-        thread.start()
+        self.cool_fabricator = Fabricator(poll_from=self.psutil_poll, stream=True, default_value={})
+        self.cool_fabricator.connect("changed", self.update_status)
 
-    def psutil_poll(self) -> dict:
-        """Polls system data in a separate thread and updates labels safely."""
-        while self._running:
-            ram = psutil.virtual_memory()
-            disk = psutil.disk_usage("/")
-            try:
-                temp = list(psutil.sensors_temperatures().items())[0][1][0].current
-            except (IndexError, KeyError):
-                temp = 0
-
-            value = {
-                "cpu_usage": int(psutil.cpu_percent()),
-                "cpu_temp": int(temp),
-                "ram_percent": ram.percent,
-                "ram_usage": (ram.total - ram.available) / (1024**3),
-                "disk_percent": disk.percent,
-                "disk_usage": disk.used / (1024**3),
-            }
-
-            # Thread-safe UI update
-            GLib.idle_add(self.update_ui, value)
-
-            time.sleep(3)  # Poll every 3 seconds
-
-
-
-    def update_ui(self, value: dict):
+    def update_status(self, f: Fabricator, value: dict):
         self.cpu_progress_bar.progress_bar.set_value(value["cpu_usage"] / 100)
         self.cpu_progress_bar.label.set_label(str(value["cpu_usage"]) + "%")
 
