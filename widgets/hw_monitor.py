@@ -82,6 +82,8 @@ class HWMonitor(Gtk.Box):
         thread = threading.Thread(target=self.psutil_poll, daemon=True)
         thread.start()
 
+        self.connect("destroy", self.on_destroy)
+
     def psutil_poll(self) -> dict:
         """Polls system data in a separate thread and updates labels safely."""
         while self._running:
@@ -106,8 +108,6 @@ class HWMonitor(Gtk.Box):
 
             time.sleep(3)  # Poll every 3 seconds
 
-
-
     def update_ui(self, value: dict):
         self.cpu_progress_bar.progress_bar.set_value(value["cpu_usage"] / 100)
         self.cpu_progress_bar.label.set_label(str(value["cpu_usage"]) + "%")
@@ -120,3 +120,6 @@ class HWMonitor(Gtk.Box):
 
         self.disk_progress_bar.progress_bar.set_value(value["disk_percent"])
         self.disk_progress_bar.label.set_label(f"{value['disk_usage']:.0f}GB")
+
+    def on_destroy(self, *_):
+        self._running = False
