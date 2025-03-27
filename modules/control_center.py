@@ -16,7 +16,8 @@ from widgets.media import MediaWidget
 from widgets.profile import Profile
 from widgets.power_menu import PowerMenu
 from widgets.hw_monitor import HWMonitor
-from widgets.network_controls import NetworkControls, BluetoothMenu, WifiMenu
+from widgets.network_controls import NetworkControls, BluetoothMenu
+from widgets.wifi_menu import WifiMenu
 
 from widgets.todos import Todos
 from widgets.timer import TimerWidget
@@ -123,9 +124,6 @@ class ControlCenter(Window):
         #        self.row_3 = Box(
         #            orientation="h", children=[self.todos], name="outer-box", h_expand=True
         #        )
-
-        self.wifi_widget = WifiMenu(name="wifi-menu")
-        self.bluetooth_widget = BluetoothMenu(name="bluetooth-menu")
 
         self.utils_notebook = Gtk.Notebook(name="utils-notebook")
         self.utils_notebook.append_page(self.todos, Gtk.Label(Icons.TODOS.value))

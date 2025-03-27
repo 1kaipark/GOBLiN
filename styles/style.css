@@ -318,7 +318,8 @@ slider {
 
 #todos button:hover label,
 #reminders button:hover label,
-#bluetooth-menu button:hover label {
+#bluetooth-menu button:hover label,
+#wifi-menu button:hover label {
     color: var(--red1);
 }
 #todos label {
@@ -326,7 +327,8 @@ slider {
 }
 #todos #todos-scrollable,
 #reminders #reminders-scrollable,
-#bluetooth-menu #bluetooth-scrollable {
+#bluetooth-menu #bluetooth-scrollable,
+#wifi-menu #wifi-scrollable {
     border-radius: 6px;
     background-color: darker(var(--base2));
     padding: 6px;
@@ -423,12 +425,14 @@ slider {
     border-radius: 6px;
     padding: 12px;
 }
-#bluetooth-menu switch {
+#bluetooth-menu switch,
+#wifi-menu switch {
     background-color: var(--base2);
     border-radius: 12px;
     padding: 0 2px;
 }
-#bluetooth-menu switch slider {
+#bluetooth-menu switch slider,
+#wifi-menu switch slider {
     background-color: var(--fg-dark1);
 }
 list row {

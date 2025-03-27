@@ -9,6 +9,8 @@ import time
 
 from loguru import logger
 
+from widgets.wifi_menu import WifiMenu
+
 try:
     from user.icons import Icons
 except ImportError:
@@ -27,13 +29,6 @@ except ImportError:
 
 class WifiNetworkRow(Gtk.ListBoxRow):
     def __init__(self, network_info): ...
-
-
-class WifiMenu(Gtk.Box):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        """This should be a box with a listview for wifi networks"""
-        self.pack_start(Gtk.Label("Not Implemented!"), True, True, 10)
 
 
 class BluetoothDeviceRow(Gtk.ListBoxRow):
@@ -187,7 +182,7 @@ class BluetoothMenu(Gtk.Box):
         # below header: rescan and scan status label
         scan_container = Gtk.Box()
 
-        self.refresh_button = Gtk.Button(label="refresh")
+        self.refresh_button = Gtk.Button(label="scan")
         self.refresh_button.connect("clicked", self.on_refresh_clicked)
 
         self.scan_status_label = Gtk.Label(label="scan status")
@@ -224,7 +219,6 @@ class BluetoothMenu(Gtk.Box):
         self.add(self._container)
 
         GLib.idle_add(self.update_switch)
-        GLib.idle_add(self.refresh_bluetooth, None)
 
     def refresh_bluetooth(self, button, scan_duration: int | None = None) -> bool:
         if scan_duration is None:
@@ -707,11 +701,15 @@ class NetworkControls(Gtk.Box):
         self.bluetooth_revealer = Gtk.Revealer()
         self.bluetooth_revealer.add(self.bluetooth_menu)
 
-        self.wifi_menu = WifiMenu()
+        self.wifi_menu = WifiMenu(name="wifi-menu")
         self.wifi_menu.set_size_request(-1, 200)
         self.wifi_menu.set_margin_top(6)
         self.wifi_revealer = Gtk.Revealer()
         self.wifi_revealer.add(self.wifi_menu)
+
+        self.wifi_menu.connect(
+            "connected", self.on_wifi_connected
+        )
 
         self.bluetooth_button = Gtk.Button(name="network-big-button")
         self.bluetooth_button_box = NetworkControlsButtonBox(icon=Icons.BLUETOOTH.value, default_text="off")
@@ -752,6 +750,12 @@ class NetworkControls(Gtk.Box):
         self.pack_start(buttons_box, False, False, 0)
         self.pack_start(self.bluetooth_revealer, 1, 1, 0)
         self.pack_start(self.wifi_revealer, 1, 1, 0)
+
+    def on_wifi_connected(self, x, ssid):
+        self.wifi_button_box.text_label.set_text(ssid)
+        print("-------------------------------------------")
+        print(x)
+        print(ssid)
 
 
 if __name__ == "__main__":
