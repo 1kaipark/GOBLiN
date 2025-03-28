@@ -21,11 +21,34 @@ import time
 import json
 import gi
 import os
+import re 
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Pango", "1.0")
 from gi.repository import Gtk, Gio, GLib, Gdk, Pango, GObject
+    
+def remove_ansi(text):
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
 
+def fetch_currently_connected_ssid() -> str | None:
+        # Second approach: Try checking all active WiFi connections
+    active_connections = subprocess.getoutput(
+        "nmcli -t -f NAME,TYPE con show --active"
+    ).split("\n")
+    print(f"Debug - all active connections: {active_connections}")
+
+    for conn in active_connections:
+        if ":" in conn and (
+            "wifi" in conn.lower() or "802-11-wireless" in conn.lower()
+        ):
+            connection_name = conn.split(":")[0]
+            print(
+                f"Debug - Found WiFi connection from active list: {connection_name}"
+            )
+            return remove_ansi(connection_name)
+            
+        else:
+            return None
 class WiFiNetworkRow(Gtk.ListBoxRow):
     def __init__(self, network_info):
         super().__init__()
@@ -35,19 +58,18 @@ class WiFiNetworkRow(Gtk.ListBoxRow):
         self.set_margin_end(10)
 
         # Parse network information
-        parts = network_info.split(':')
-        self.is_connected = "*" in parts[0]
+        self.is_connected = "*" in network_info[0]
 
         # More reliable SSID extraction
-        if len(parts) > 1:
+        if len(network_info) > 1:
             # Find SSID - sometimes it's after the * mark in different positions
-            self.ssid = parts[1]
+            self.ssid = network_info[1]
         else:
             self.ssid = "Unknown"
             
-        self.security = parts[2]
+        self.security = network_info[2]
         
-        signal_value = int(parts[3])
+        signal_value = int(network_info[3])
         self.signal_strength = f"{signal_value}%"
 
 
@@ -239,9 +261,17 @@ class WifiMenu(Gtk.Box):
 
         self.pack_start(action_box, False, False, 0)
 
-        GLib.idle_add(self.refresh_wifi, None)
+#        GLib.idle_add(self.refresh_wifi, None)
+        self.current_ssid: str | None = None
+        GLib.idle_add(self.refresh_currently_connected_ssid, None)
 
         GLib.timeout_add_seconds(1, self.update_network_speed)
+
+    def refresh_currently_connected_ssid(self, _):
+        self.current_ssid = fetch_currently_connected_ssid()
+        if self.current_ssid:
+            self.emit("connected", self.current_ssid)
+
 
     def refresh_wifi(self, button=None):
         """Refresh the list of Wi-Fi networks."""
@@ -316,17 +346,25 @@ class WifiMenu(Gtk.Box):
             full_networks = subprocess.getoutput(
                 "nmcli -t -f IN-USE,SSID,SECURITY,SIGNAL dev wifi list"
             ).split("\n")
+            full_networks = [network.split(":") for network in full_networks] # split by delimiter ":"
+
+            # sort by connected status then alphabeticaly by SSID
+            full_networks.sort(key=lambda v: (v[0] != "*", v[1]))
+
+
+            print(full_networks)
 
             # Add networks and keep track of the previously selected one
             previously_selected_row = None
 
             for network in full_networks:
-                row = WiFiNetworkRow(network)
-                self.wifi_listbox.add(row)
+                if network[1] != "": # remove blank entries
+                    row = WiFiNetworkRow(network)
+                    self.wifi_listbox.add(row)
 
-                # If this was the previously selected network, remember it
-                if selected_ssid and row.get_ssid() == selected_ssid:
-                    previously_selected_row = row
+                    # If this was the previously selected network, remember it
+                    if selected_ssid and row.get_ssid() == selected_ssid:
+                        previously_selected_row = row
 
             self.wifi_listbox.show_all()
 
@@ -340,6 +378,7 @@ class WifiMenu(Gtk.Box):
                 self.wifi_status_switch.set_active(wifi_status.lower() == "enabled")
             except Exception as e:
                 print(f"Error getting Wi-Fi status: {e}")
+
         except Exception as e:
             print(f"Error updating WiFi list: {e}")
 
