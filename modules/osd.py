@@ -39,9 +39,8 @@ class AudioOSDContainer(Gtk.Box):
     def on_speaker_changed(self, audio, _):
         if speaker := self.audio.speaker:
             speaker.connect("notify::volume", self.update_volume)
-            speaker.connect("notify::muted", lambda *_: print("Mut"))
             
-    def update_volume(self, speaker, idkwtftsislmao):
+    def update_volume(self, speaker, _):
         speaker.handler_block_by_func(self.update_volume)
         self.emit("volume-changed")
         if not self.audio.speaker:
@@ -57,9 +56,9 @@ class AudioOSDContainer(Gtk.Box):
     def check_mute(self, audio):
         if not audio.speaker:
             return
-        self.emit("volume-changed")
         if audio.speaker.muted:
             self.icon.set_text(Icons.VOL_MUTE.value)
+            self.emit("volume-changed")
         else:
             
             self.icon.set_text(Icons.VOL.value)

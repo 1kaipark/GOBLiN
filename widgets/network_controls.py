@@ -9,20 +9,10 @@ import time
 
 from loguru import logger
 
+# I STOLE ALL THIS CODE.
 from widgets.wifi_menu import WifiMenu
 
-try:
-    from user.icons import Icons
-except ImportError:
-    from enum import Enum
-
-    class Icons(Enum):
-        WIFI = "󰤨"
-        BLUETOOTH = "󰂯"
-        UP = ""
-        DOWN = ""
-
-# I STOLE ALL THIS CODE.
+from user.icons import Icons
 
 # TODO context menu for right click connect, dc, forget
 
@@ -748,13 +738,12 @@ class NetworkControls(Gtk.Box):
         buttons_box.pack_start(self.wifi_button, True, True, 0)
 
         self.pack_start(buttons_box, False, False, 0)
-        self.pack_start(self.bluetooth_revealer, 1, 1, 0)
-        self.pack_start(self.wifi_revealer, 1, 1, 0)
+        self.pack_start(self.bluetooth_revealer, False, False, 0)
+        self.pack_start(self.wifi_revealer, False, False, 0)
 
-    def on_wifi_connected(self, x, ssid):
+    def on_wifi_connected(self, wifi_menu, ssid):
         self.wifi_button_box.text_label.set_text(ssid)
         print("-------------------------------------------")
-        print(x)
         print(ssid)
 
 

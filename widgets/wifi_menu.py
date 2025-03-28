@@ -26,42 +26,6 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Pango", "1.0")
 from gi.repository import Gtk, Gio, GLib, Gdk, Pango, GObject
 
-
-# ? Get configuration directory from XDG standard or fallback to ~/.config
-CONFIG_DIR = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
-CONFIG_PATH = os.path.join(CONFIG_DIR, "better-control")
-SETTINGS_FILE = os.path.join(CONFIG_PATH, "settings.json")
-
-# ? Dependencies used by the program
-DEPENDENCIES: typing.List[typing.Tuple[str, str, str]] = [
-    (
-        "powerprofilesctl",
-        "Power Profiles Control",
-        "- Debian/Ubuntu: sudo apt install power-profiles-daemon\n- Arch Linux: sudo pacman -S power-profiles-daemon\n- Fedora: sudo dnf install power-profiles-daemon",
-    ),
-    (
-        "nmcli",
-        "Network Manager CLI",
-        "- Install NetworkManager package for your distro",
-    ),
-    (
-        "bluetoothctl",
-        "Bluetooth Control",
-        "- Debian/Ubuntu: sudo apt install bluez\n- Arch Linux: sudo pacman -S bluez bluez-utils\n- Fedora: sudo dnf install bluez",
-    ),
-    (
-        "pactl",
-        "PulseAudio Control",
-        "- Install PulseAudio or PipeWire depending on your distro",
-    ),
-    (
-        "brightnessctl",
-        "Brightness Control",
-        "- Debian/Ubuntu: sudo apt install brightnessctl\n- Arch Linux: sudo pacman -S brightnessctl\n- Fedora: sudo dnf install brightnessctl",
-    ),
-]
-
-
 class WiFiNetworkRow(Gtk.ListBoxRow):
     def __init__(self, network_info):
         super().__init__()
@@ -71,74 +35,21 @@ class WiFiNetworkRow(Gtk.ListBoxRow):
         self.set_margin_end(10)
 
         # Parse network information
-        parts = network_info.split()
+        parts = network_info.split(':')
         self.is_connected = "*" in parts[0]
 
         # More reliable SSID extraction
         if len(parts) > 1:
             # Find SSID - sometimes it's after the * mark in different positions
-            # For connected networks, using a more reliable method to extract SSID
-            if self.is_connected:
-                # Try to get the proper SSID from nmcli connection show --active
-                try:
-                    active_connections = subprocess.getoutput(
-                        "nmcli -t -f NAME,DEVICE connection show --active"
-                    ).split("\n")
-                    for conn in active_connections:
-                        if ":" in conn and "wifi" in subprocess.getoutput(
-                            f"nmcli -t -f TYPE connection show '{conn.split(':')[0]}'"
-                        ):
-                            self.ssid = conn.split(":")[0]
-                            break
-                    else:
-                        # Fallback to position-based extraction
-                        self.ssid = parts[1]
-                except Exception as e:
-                    print(f"Error getting active connection name: {e}")
-                    self.ssid = parts[1]
-            else:
-                # For non-connected networks, use the second column
-                self.ssid = parts[1]
+            self.ssid = parts[1]
         else:
             self.ssid = "Unknown"
+            
+        self.security = parts[2]
+        
+        signal_value = int(parts[3])
+        self.signal_strength = f"{signal_value}%"
 
-        # Determine security type more precisely
-        if "WPA2" in network_info:
-            self.security = "WPA2"
-        elif "WPA3" in network_info:
-            self.security = "WPA3"
-        elif "WPA" in network_info:
-            self.security = "WPA"
-        elif "WEP" in network_info:
-            self.security = "WEP"
-        else:
-            self.security = "Open"
-
-        # Improved signal strength extraction
-        # Signal is displayed in the "SIGNAL" column of nmcli output (index 6 with our new command)
-        signal_value = 0
-        try:
-            # Now that we use a consistent format with -f, SIGNAL should be in column 7 (index 6)
-            if len(parts) > 6 and parts[6].isdigit():
-                signal_value = int(parts[6])
-                self.signal_strength = f"{signal_value}%"
-            else:
-                # Fallback: scan through values for something that looks like signal strength
-                for i, p in enumerate(parts):
-                    # Look for a number between 0-100 that's likely the signal strength
-                    if p.isdigit() and 0 <= int(p) <= 100:
-                        # Skip if this is likely to be the channel number (typically at index 4)
-                        if i != 4:  # Skip CHAN column
-                            signal_value = int(p)
-                            self.signal_strength = f"{signal_value}%"
-                            break
-                else:
-                    # No valid signal found
-                    self.signal_strength = "0%"
-        except (IndexError, ValueError) as e:
-            print(f"Error parsing signal strength from {parts}: {e}")
-            self.signal_strength = "0%"
-            signal_value = 0
 
         # Determine signal icon based on signal strength percentage
         if signal_value >= 80:
@@ -332,35 +243,6 @@ class WifiMenu(Gtk.Box):
 
         GLib.timeout_add_seconds(1, self.update_network_speed)
 
-    def update_network_speed(self):
-        """Measure and update the network speed."""
-        try:
-            net_io = psutil.net_io_counters()
-            bytes_sent = net_io.bytes_sent
-            bytes_recv = net_io.bytes_recv
-
-            if not hasattr(self, "prev_bytes_sent"):
-                self.prev_bytes_sent = bytes_sent
-                self.prev_bytes_recv = bytes_recv
-                return True
-
-            upload_speed_kb = (bytes_sent - self.prev_bytes_sent) / 1024
-            download_speed_kb = (bytes_recv - self.prev_bytes_recv) / 1024
-
-            upload_speed_mbps = (upload_speed_kb * 8) / 1024
-            download_speed_mbps = (download_speed_kb * 8) / 1024
-
-            self.prev_bytes_sent = bytes_sent
-            self.prev_bytes_recv = bytes_recv
-
-            self.download_label.set_text(f"Download: {download_speed_mbps:.2f} Mbps")
-            self.upload_label.set_text(f"Upload: {upload_speed_mbps:.2f} Mbps | ")
-
-        except Exception as e:
-            print(f"Error updating network speed: {e}")
-
-        return True  # Continue the timer
-
     def refresh_wifi(self, button=None):
         """Refresh the list of Wi-Fi networks."""
 
@@ -374,7 +256,7 @@ class WifiMenu(Gtk.Box):
             self.wifi_listbox.remove(child)
 
         # Check if a Wi-Fi device exists
-        wifi_devices = subprocess.getoutput("nmcli device status | grep wifi")
+        wifi_devices = subprocess.getoutput("nmcli -t device status | grep wifi")
         if not wifi_devices:
             error_label = Gtk.Label(label="No Wi-Fi device found")
             error_label.get_style_context().add_class("error-label")
@@ -387,7 +269,7 @@ class WifiMenu(Gtk.Box):
             self._is_refreshing = False  # Allow future refreshes
             return  # Stop further execution
         else:
-            ssid = wifi_devices.splitlines()[0].split()[-1]
+            ssid = wifi_devices.splitlines()[0].split(":")[-1]
             self.emit("connected", ssid)
 
         # Enable the Wi-Fi switch if a device is found
@@ -432,10 +314,8 @@ class WifiMenu(Gtk.Box):
         try:
             # Use fields parameter to get a more consistent format, including SIGNAL explicitly
             full_networks = subprocess.getoutput(
-                "nmcli -f IN-USE,BSSID,SSID,MODE,CHAN,RATE,SIGNAL,BARS,SECURITY dev wifi list"
-            ).split("\n")[
-                1:
-            ]  # Skip header row
+                "nmcli -t -f IN-USE,SSID,SECURITY,SIGNAL dev wifi list"
+            ).split("\n")
 
             # Add networks and keep track of the previously selected one
             previously_selected_row = None
@@ -827,12 +707,9 @@ class WifiMenu(Gtk.Box):
 
                 # If user canceled, abort connection
                 if not success:
-                    GLib.idle_add(self.hide_connecting_overlay)
                     GLib.idle_add(lambda: setattr(self, "_is_connecting", False))
                     return
 
-        # Show connecting overlay
-        self.show_connecting_overlay(ssid)
 
         def connect_thread():
             try:
@@ -880,7 +757,6 @@ class WifiMenu(Gtk.Box):
                     else:
                         # No saved profile and no password provided
                         if not password:
-                            GLib.idle_add(self.hide_connecting_overlay)
                             GLib.idle_add(
                                 lambda: print("Password required for secured network")
                             )
@@ -1046,9 +922,8 @@ class WifiMenu(Gtk.Box):
                 # Wait a bit longer before refreshing to give the connection time to establish
                 time.sleep(1)
 
-                # Reset connecting flag and hide overlay
+                # Reset connecting flag
                 GLib.idle_add(lambda: setattr(self, "_is_connecting", False))
-                GLib.idle_add(self.hide_connecting_overlay)
 
                 # Finally refresh the network list
                 GLib.idle_add(self.refresh_wifi, None)
@@ -1056,81 +931,6 @@ class WifiMenu(Gtk.Box):
         thread = threading.Thread(target=connect_thread)
         thread.daemon = True
         thread.start()
-
-    def show_connecting_overlay(self, ssid):
-        """Show overlay with spinner during connection."""
-        # First, make sure we don't already have an overlay
-        if hasattr(self, "overlay") and self.overlay:
-            self.hide_connecting_overlay()
-
-        # Store original parent of main_container
-        self.original_parent = self.main_container.get_parent()
-        if self.original_parent:
-            self.original_parent.remove(self.main_container)
-
-        # Create our overlay
-        self.overlay = Gtk.Overlay()
-        self.overlay.add(self.main_container)
-
-        # Create a semi-transparent background
-        bg = Gtk.EventBox()
-        bg_style_provider = Gtk.CssProvider()
-        bg_style_provider.load_from_data(
-            b"""
-            eventbox {
-                background-color: rgba(0, 0, 0, 0.5);
-            }
-        """
-        )
-        bg_context = bg.get_style_context()
-        bg_context.add_provider(
-            bg_style_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
-
-        # Create a box for the spinner and message
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        box.set_halign(Gtk.Align.CENTER)
-        box.set_valign(Gtk.Align.CENTER)
-
-        # Add spinner
-        spinner = Gtk.Spinner()
-        spinner.set_size_request(50, 50)
-        spinner.start()
-        box.pack_start(spinner, False, False, 0)
-
-        # Add message
-        message = Gtk.Label()
-        message.set_markup(
-            f"<span color='white' size='large'>Connecting to <b>{ssid}</b>...</span>"
-        )
-        box.pack_start(message, False, False, 0)
-
-        bg.add(box)
-        self.overlay.add_overlay(bg)
-
-        # Add the overlay to our window
-        self.add(self.overlay)
-        self.show_all()
-
-    def hide_connecting_overlay(self):
-        """Hide the connection overlay and restore original layout."""
-        if hasattr(self, "overlay") and self.overlay:
-            # Remove main_container from overlay
-            self.overlay.remove(self.main_container)
-
-            # Remove overlay from window
-            self.remove(self.overlay)
-
-            # Restore main_container to its original parent
-            if hasattr(self, "original_parent") and self.original_parent:
-                self.original_parent.add(self.main_container)
-            else:
-                self.add(self.main_container)
-
-            # Clean up
-            self.overlay = None
-            self.show_all()
-        return False
 
 if __name__ == "__main__":
     win = Gtk.Window()
