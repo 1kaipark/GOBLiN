@@ -700,6 +700,9 @@ class NetworkControls(Gtk.Box):
         self.wifi_menu.connect(
             "connected", self.on_wifi_connected
         )
+        self.wifi_menu.connect(
+            "power-status-changed", self.on_wifi_toggled,
+        )
 
         self.bluetooth_button = Gtk.Button(name="network-big-button")
         self.bluetooth_button_box = NetworkControlsButtonBox(icon=Icons.BLUETOOTH.value, default_text="off")
@@ -743,8 +746,12 @@ class NetworkControls(Gtk.Box):
 
     def on_wifi_connected(self, wifi_menu, ssid):
         self.wifi_button_box.text_label.set_text(ssid)
-        print("-------------------------------------------")
-        print(ssid)
+        
+    def on_wifi_toggled(self, wifi_menu, state):
+        if not state:
+            self.wifi_button_box.text_label.set_text("off")
+        else: ...
+            
 
 
 if __name__ == "__main__":

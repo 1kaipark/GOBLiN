@@ -136,8 +136,10 @@ class ControlCenter(Window):
             children=[self.utils_notebook],
             name="outer-box",
         )
+
+        self.network_controls = NetworkControls()
         
-        self.row_4 = Box(orientation="h", children=[NetworkControls()], name="outer-box", v_expand=True)
+        self.row_4 = Box(orientation="h", children=[self.network_controls], name="outer-box", v_expand=True)
         
         self.row_5 = Box(orientation="h", children=[self.power_menu], name="outer-box")
         self.row_6 = Box(

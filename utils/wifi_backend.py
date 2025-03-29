@@ -1,208 +1,230 @@
 import subprocess
-import threading
-from dataclasses import dataclass
+from typing import List, Dict
+from loguru import logger
 import re
-import time
 
 
-@dataclass
-class WifiNetworkData:
-    ssid: str
-    security: str
-    connected: bool = False
-    bssid: str = ""
-    channel: int = 0
-    speed: str = ""
-    signal_strength: int = 0
-    bars: str = ""
+def get_wifi_status() -> bool:
+    """Get WiFi power status
 
-    def as_dict(self) -> str:
-        return {
-            "connected": self.connected,
-            "ssid": self.ssid,
-            "security": self.security,
-            "bssid": self.bssid,
-            "channel": self.channel,
-            "speed": self.speed,
-            "signal_strength": self.signal_strength,
-            "bars": self.bars,
-        }
+    Returns:
+        bool: True if WiFi is enabled, False otherwise
+    """
+    try:
+        result = subprocess.run(
+            ["nmcli", "radio", "wifi"], capture_output=True, text=True
+        )
+        return result.stdout.strip().lower() == "enabled"
+    except Exception as e:
+        logger.error(f"Failed getting WiFi status: {e}")
+        return False
 
-    def __repr__(self) -> str:
-        return str(self.as_dict())
+
+def set_wifi_power(enabled: bool) -> None:
+    """Set WiFi power state
+
+    Args:
+        enabled (bool): True to enable, False to disable
+    """
+    try:
+        state = "on" if enabled else "off"
+        subprocess.run(["nmcli", "radio", "wifi", state], check=True)
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Failed setting WiFi power: {e}")
+
+
+def get_wifi_networks() -> List[Dict[str, str]]:
+    """Get list of available WiFi networks
+
+    Returns:
+        List[Dict[str, str]]: List of network dictionaries
+    """
+    try:
+        # Check if WiFi is supported on this system
+        result = subprocess.run(
+            ["nmcli", "-t", "-f", "DEVICE,TYPE", "device"],
+            capture_output=True,
+            text=True,
+        )
+        wifi_interfaces = [line for line in result.stdout.split("\n") if "wifi" in line]
+        if not wifi_interfaces:
+            logger.warning("WiFi is not supported on this machine")
+            return []
+
+        # Use --terse mode and specific fields for more reliable parsing
+        result = subprocess.run(
+            [
+                "nmcli",
+                "-t",
+                "-f",
+                "IN-USE,SSID,SIGNAL,SECURITY",
+                "device",
+                "wifi",
+                "list",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        output = result.stdout
+        networks = []
+        for line in output.split("\n"):
+            if not line.strip():
+                continue
+            # Split by ':' since we're using terse mode
+            parts = line.split(":")
+            if len(parts) >= 4:
+                in_use = "*" in parts[0]
+                ssid = parts[1]
+                signal = parts[2] if parts[2].strip() else "0"
+                security = parts[3] if parts[3].strip() != "" else "none"
+                # Only add networks with valid SSIDs
+                if ssid and ssid.strip():
+                    networks.append(
+                        {
+                            "in_use": in_use,
+                            "ssid": ssid.strip(),
+                            "signal": signal.strip(),
+                            "security": security.strip(),
+                        }
+                    )
+        networks = sorted(
+            networks, key=lambda network: ((not network["in_use"]), network["ssid"])
+        )
+        return networks
+    except Exception as e:
+        logger.error(f"Failed getting WiFi networks: {e}")
+        return []
+
+
+def get_connection_info(ssid: str) -> Dict[str, str]:
+    """Get information about a WiFi connection
+
+    Args:
+        ssid (str): Network SSID
+
+    Returns:
+        Dict[str, str]: Dictionary containing connection information
+    """
+    try:
+        result = subprocess.run(
+            ["nmcli", "-t", "connection", "show", ssid], capture_output=True, text=True
+        )
+        output = result.stdout
+        info = {}
+        for line in output.split("\n"):
+            if ":" in line:
+                key, value = line.split(":", 1)
+                info[key.strip()] = value.strip()
+        return info
+    except Exception as e:
+        logger.error(f"Failed getting connection info: {e}")
+        return {}
+
+
+def connect_network(ssid: str, password: str = "", remember: bool = True) -> bool:
+    """Connect to a WiFi network
+
+    Args:
+        ssid (str): Network SSID
+        password (str, optional): Network password. Defaults to None.
+        remember (bool, optional): Whether to save the connection. Defaults to True.
+
+    Returns:
+        bool: True if connection successful, False otherwise
+    """
+    try:
+        # First try to connect using saved connection
+        try:
+            subprocess.run(["nmcli", "con", "up", ssid], check=True)
+            return True
+        except subprocess.CalledProcessError:
+            # If saved connection fails, try with password if provided
+            if password:
+                cmd = ["nmcli", "device", "wifi", "connect", ssid, "password", password]
+                if not remember:
+                    cmd.extend(["--temporary"])
+                subprocess.run(cmd, check=True)
+                return True
+            return False
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Failed connecting to network: {e}")
+        return False
+
+
+def disconnect_network(ssid: str) -> bool:
+    """Disconnect from a WiFi network
+
+    Args:
+        ssid (str): Network SSID
+
+    Returns:
+        bool: True if disconnection successful, False otherwise
+    """
+    try:
+        subprocess.run(["nmcli", "connection", "down", ssid], check=True)
+        return True
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Failed disconnecting from network: {e}")
+        return False
+
+
+def forget_network(ssid: str) -> bool:
+    """Remove a saved WiFi network
+
+    Args:
+        ssid (str): Network SSID
+
+    Returns:
+        bool: True if removal successful, False otherwise
+    """
+    try:
+        subprocess.run(["nmcli", "connection", "delete", ssid], check=True)
+        return True
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Failed removing network: {e}")
+        return False
+
+
+def get_network_speed() -> Dict[str, float]:
+    """Get current network speed
+
+    Returns:
+        Dict[str, float]: Dictionary with upload and download speeds in Mbps
+    """
+    try:
+        # Get WiFi interface name
+        result = subprocess.run(
+            ["nmcli", "-t", "-f", "DEVICE,TYPE", "device"],
+            capture_output=True,
+            text=True,
+        )
+        output = result.stdout
+        wifi_lines = [line for line in output.split("\n") if "wifi" in line]
+
+        if not wifi_lines:
+            # Return zeros with the expected keys when WiFi is not supported
+            logger.warning("WiFi is not supported on this machine")
+            return {"rx_bytes": 0, "tx_bytes": 0, "wifi_supported": False}
+
+        interface = wifi_lines[0].split(":")[0]
+
+        # Get current bytes
+        with open(f"/sys/class/net/{interface}/statistics/rx_bytes") as f:
+            rx_bytes = int(f.read())
+        with open(f"/sys/class/net/{interface}/statistics/tx_bytes") as f:
+            tx_bytes = int(f.read())
+        return {"rx_bytes": rx_bytes, "tx_bytes": tx_bytes, "wifi_supported": True}
+    except Exception as e:
+        logger.error(f"Failed getting network speed: {e}")
+        return {"rx_bytes": 0, "tx_bytes": 0, "wifi_supported": False}
 
 
 def remove_ansi(text):
     return re.sub(r"\x1b\[[0-9;]*m", "", text)
 
 
-def rescan_wifi():
-    subprocess.run(["nmcli", "device", "wifi", "rescan"], timeout=1)
-
-
-def _serialize_network_entry(network_entry) -> dict:
-    cleaned_entry = remove_ansi(network_entry)
-    __match = re.match(
-        r"\s*([\*\s])\s+([\w:]+)\s+(.+?)\s+Infra\s+(\d+)\s+(\d+\sMbit/s)\s+(\d+)\s+([▂▄▆_]+)\s+(WPA2)",
-        cleaned_entry,
-    )
-    if __match:
-        return WifiNetworkData(
-            connected=(__match.group(1) == "*"),
-            bssid=__match.group(2),  # MAC Address
-            ssid=__match.group(3).strip(),  # Network Name
-            channel=int(__match.group(4)),  # WiFi Channel
-            speed=__match.group(5),  # speed
-            signal_strength=int(__match.group(6)),  # signal strength in dbm
-            bars=__match.group(7),  # signal representation
-            security=__match.group(8),  # wpa2/wpa3/etc
-        )
-
-
-def fetch_full_networks() -> list[dict[str, str]]:
-    try:
-        full_networks = subprocess.getoutput(
-            "nmcli -f IN-USE,BSSID,SSID,MODE,CHAN,RATE,SIGNAL,BARS,SECURITY dev wifi list"
-        ).split("\n")[1:]  # Skip heades
-        return [
-            _serialize_network_entry(entry)
-            for entry in full_networks
-            if entry is not None
-        ]
-    except Exception as e:
-        print(e)
-        return None
-
-
-def disconnect_wifi(connection_name: str) -> bool:
-    try:
-        subprocess.run(["nmcli", "con", "down", connection_name], check=True)
-        return True
-    except subprocess.CalledProcessError as e:
-        return False
-
-
-def connect_wifi(
-    wifi_data: "WifiNetworkData",
-    password: str | None = None,
-    remember: bool = True,
-) -> bool:
-    ssid = wifi_data.ssid
-    is_secured = wifi_data.security != "open"
-
-    # Assume no saved profile
-    if is_secured:
-        try:
-            check_saved = subprocess.run(
-                ["nmcli", "-t", "-f", "name", "connection", "show"],
-                capture_output=True,
-                text=True,
-            )
-            saved_connections = check_saved.stdout.strip().split("\n")
-            has_saved_profile = ssid in saved_connections
-        except Exception as e:
-            ...  # TODO
-            has_saved_profile = False
-
-        print("Saved connection: " + str(has_saved_profile))
-        if has_saved_profile:
-            up_command = ["nmcli", "con", "up", ssid]
-            up_result = subprocess.run(up_command, capture_output=True, text=True)
-            if up_result.returncode == 0:
-                print("Connection activated")
-                time.sleep(2)
-                return True
-            
-        # Handle password 
-        if password is None:
-            return False
-
-        add_command = [
-            "nmcli",
-            "con",
-            "add",
-            "type",
-            "wifi",
-            "con-name",
-            ssid,
-            "ssid",
-            ssid,
-            "wifi-sec.key-mgmt",
-            "wpa-psk",
-            "wifi-sec.psk",
-            password,
-        ]
-
-        # If user unchecked "Remember this network"
-        if not remember:
-            add_command.extend(["connection.autoconnect", "no"])
-
-        print(f"Running command: {' '.join(add_command)}")
-
-        try:
-            add_result = subprocess.run(add_command, capture_output=True, text=True)
-            if add_result.returncode == 0:
-                print(f"Connection profile created: {add_result.stdout}")
-
-                up_command = ["nmcli", "con", "up", ssid]
-                up_result = subprocess.run(up_command, capture_output=True, text=True)
-                if up_result.returncode == 0:
-                    print(f"Connection activated: {up_result.stdout}")
-                    time.sleep(2)
-                    return True
-                else:
-                    print(f"Error activating: {up_result.stderr}")
-                    return False
-            else:
-                print(f"Error: {add_result.stderr}")
-                return False
-        except Exception as e:
-            print(str(e))
-
-    else:
-        print("Open network")
-        try:
-            # For open networks, create connection without security
-            add_command = [
-                "nmcli",
-                "con",
-                "add",
-                "type",
-                "wifi",
-                "con-name",
-                ssid,
-                "ssid",
-                ssid,
-            ]
-            add_result = subprocess.run(add_command, capture_output=True, text=True)
-
-            if add_result.returncode == 0:
-                print(f"Open connection profile created: {add_result}")
-                up_result = subprocess.run(
-                    ["nmcli", "con", "up", ssid], capture_output=True, text=True
-                )
-                if up_result.returncode == 0:
-                    print(f"Open connection activated: {up_result}")
-                    time.sleep(2)
-                    return True
-                else:
-                    print("Nope")
-                    return False
-        except Exception as e:
-            print(str(e))
-            return False
-
-
-def forget_wifi(wifi_data: WifiNetworkData) -> bool:
-    ssid = wifi_data.ssid
-    try:
-        subprocess.run(["nmcli", "connection", "delete", ssid], check=True)
-        return True
-    except subprocess.CalledProcessError as e:
-        return False
-    
 def fetch_currently_connected_ssid() -> str | None:
-        # Second approach: Try checking all active WiFi connections
+    # Second approach: Try checking all active WiFi connections
     active_connections = subprocess.getoutput(
         "nmcli -t -f NAME,TYPE con show --active"
     ).split("\n")
@@ -213,14 +235,8 @@ def fetch_currently_connected_ssid() -> str | None:
             "wifi" in conn.lower() or "802-11-wireless" in conn.lower()
         ):
             connection_name = conn.split(":")[0]
-            print(
-                f"Debug - Found WiFi connection from active list: {connection_name}"
-            )
+            print(f"Debug - Found WiFi connection from active list: {connection_name}")
             return remove_ansi(connection_name)
-            
+
         else:
             return None
-
-rescan_wifi()
-networks = fetch_full_networks()
-networks

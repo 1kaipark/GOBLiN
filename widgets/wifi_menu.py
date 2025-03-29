@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # Copyright (C) 2025 quantumvoid0 and FelipeFMA
 #
 # This program is licensed under the terms of the GNU General Public License v3 + Attribution.
@@ -10,984 +8,672 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # See the GNU General Public License for more details.
-import subprocess
+
+import gi  # type: ignore
 import threading
-import argparse
-import logging
-import psutil
-import shutil
-import typing
-import time
-import json
-import gi
-import os
-import re 
+
+import subprocess
 
 gi.require_version("Gtk", "3.0")
-gi.require_version("Pango", "1.0")
-from gi.repository import Gtk, Gio, GLib, Gdk, Pango, GObject
-    
-def remove_ansi(text):
-    return re.sub(r"\x1b\[[0-9;]*m", "", text)
+from gi.repository import Gtk, GLib, GObject  # type: ignore
 
-def fetch_currently_connected_ssid() -> str | None:
-        # Second approach: Try checking all active WiFi connections
-    active_connections = subprocess.getoutput(
-        "nmcli -t -f NAME,TYPE con show --active"
-    ).split("\n")
-    print(f"Debug - all active connections: {active_connections}")
+from utils.wifi_backend import (
+    get_wifi_status,
+    set_wifi_power,
+    get_wifi_networks,
+    connect_network,
+    disconnect_network,
+    forget_network,
+    fetch_currently_connected_ssid,
+)
 
-    for conn in active_connections:
-        if ":" in conn and (
-            "wifi" in conn.lower() or "802-11-wireless" in conn.lower()
-        ):
-            connection_name = conn.split(":")[0]
-            print(
-                f"Debug - Found WiFi connection from active list: {connection_name}"
-            )
-            return remove_ansi(connection_name)
-            
-        else:
-            return None
-class WiFiNetworkRow(Gtk.ListBoxRow):
-    def __init__(self, network_info):
-        super().__init__()
-        self.set_margin_top(5)
-        self.set_margin_bottom(5)
-        self.set_margin_start(10)
-        self.set_margin_end(10)
+from loguru import logger
 
-        # Parse network information
-        self.is_connected = "*" in network_info[0]
-
-        # More reliable SSID extraction
-        if len(network_info) > 1:
-            # Find SSID - sometimes it's after the * mark in different positions
-            self.ssid = network_info[1]
-        else:
-            self.ssid = "Unknown"
-            
-        self.security = network_info[2]
-        
-        signal_value = int(network_info[3])
-        self.signal_strength = f"{signal_value}%"
-
-
-        # Determine signal icon based on signal strength percentage
-        if signal_value >= 80:
-            icon_name = "network-wireless-signal-excellent-symbolic"
-        elif signal_value >= 60:
-            icon_name = "network-wireless-signal-good-symbolic"
-        elif signal_value >= 40:
-            icon_name = "network-wireless-signal-ok-symbolic"
-        elif signal_value > 0:
-            icon_name = "network-wireless-signal-weak-symbolic"
-        else:
-            icon_name = "network-wireless-signal-none-symbolic"
-
-        # Determine security icon
-        if self.security != "Open":
-            security_icon = "network-wireless-encrypted-symbolic"
-        else:
-            security_icon = "network-wireless-symbolic"
-
-        # Main container for the row
-        container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        self.add(container)
-
-        # Network icon
-        wifi_icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.SMALL_TOOLBAR)
-        container.pack_start(wifi_icon, False, False, 0)
-
-        # Left side with SSID and security
-        left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
-
-        ssid_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-        ssid_label = Gtk.Label(label=self.ssid)
-        ssid_label.set_halign(Gtk.Align.START)
-        if self.is_connected:
-            ssid_label.set_markup(f"<b>{self.ssid}</b>")
-        ssid_box.pack_start(ssid_label, True, True, 0)
-
-        if self.is_connected:
-            connected_label = Gtk.Label(label=" (Connected)")
-            connected_label.get_style_context().add_class("success-label")
-            ssid_box.pack_start(connected_label, False, False, 0)
-
-        left_box.pack_start(ssid_box, False, False, 0)
-
-        details_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-
-        security_image = Gtk.Image.new_from_icon_name(
-            security_icon, Gtk.IconSize.SMALL_TOOLBAR
-        )
-        details_box.pack_start(security_image, False, False, 0)
-
-        security_label = Gtk.Label(label=self.security)
-        security_label.set_halign(Gtk.Align.START)
-        security_label.get_style_context().add_class("dim-label")
-        details_box.pack_start(security_label, False, False, 0)
-
-        left_box.pack_start(details_box, False, False, 0)
-
-        container.pack_start(left_box, True, True, 0)
-
-        # Right side with signal strength
-        signal_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
-        signal_box.set_halign(Gtk.Align.END)
-
-        signal_label = Gtk.Label(label=self.signal_strength)
-        signal_box.pack_start(signal_label, False, False, 0)
-
-        container.pack_end(signal_box, False, False, 0)
-
-        # Store original network info for connection handling
-        self.original_network_info = network_info
-
-    def get_ssid(self):
-        return self.ssid
-
-    def get_security(self):
-        return self.security
-
-    def get_original_network_info(self):
-        return self.original_network_info
-
-    def is_secured(self):
-        return self.security != "Open"
 
 class WifiMenu(Gtk.Box):
     __gsignals__ = {
-        "connected": (GObject.SignalFlags.RUN_FIRST, None, (str,))
+        "connected": (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        "power-status-changed": (GObject.SignalFlags.RUN_FIRST, None, (bool, )),
     }
+    """WiFi settings tab"""
+
     def __init__(self, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
-     
-        self.set_hexpand(True)
+        logger.info("Initializing WiFi tab")
+        self.set_hexpand(False)
         self.set_vexpand(True)
 
-        # Header with Wi-Fi title and status
-        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        header_box.set_margin_bottom(10)
-
-        wifi_label = Gtk.Label(label="Wi-Fi Networks")
-        wifi_label.get_style_context().add_class("wifi-header")
-        header_box.pack_start(wifi_label, False, False, 0)
-
-        self.wifi_status_switch = Gtk.Switch()
-        self.wifi_status_switch.set_active(True)
-        self.wifi_status_switch.connect("notify::active", self.on_wifi_switch_toggled)
-        self.wifi_status_switch.set_valign(Gtk.Align.CENTER)
-        header_box.pack_end(self.wifi_status_switch, False, False, 0)
-
-        wifi_status_label = Gtk.Label(label="Enable Wi-Fi")
-        wifi_status_label.set_valign(Gtk.Align.CENTER)
-        header_box.pack_end(wifi_status_label, False, False, 5)
-
-        self.pack_start(header_box, False, False, 0)
-
-        # Network speed indicators
-        speed_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        speed_box.set_margin_bottom(10)
-
-        # Upload speed
-        upload_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-        upload_icon = Gtk.Image.new_from_icon_name(
-            "go-up-symbolic", Gtk.IconSize.SMALL_TOOLBAR
+        # Check if WiFi is supported
+        result = subprocess.run(
+            ["nmcli", "-t", "-f", "DEVICE,TYPE", "device"],
+            capture_output=True,
+            text=True,
         )
-        upload_box.pack_start(upload_icon, False, False, 0)
+        wifi_interfaces = [line for line in result.stdout.split("\n") if "wifi" in line]
+        self.wifi_supported = bool(wifi_interfaces)
 
-        self.upload_label = Gtk.Label(label="0 KB/s")
-        upload_box.pack_start(self.upload_label, False, False, 0)
+        if not self.wifi_supported:
+            logger.info("WiFi is not supported on this machine")
 
-        speed_box.pack_start(upload_box, False, False, 0)
-
-        # Download speed
-        download_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-        download_icon = Gtk.Image.new_from_icon_name(
-            "go-down-symbolic", Gtk.IconSize.SMALL_TOOLBAR
-        )
-        download_box.pack_start(download_icon, False, False, 0)
-
-        self.download_label = Gtk.Label(label="0 KB/s")
-        download_box.pack_start(self.download_label, False, False, 0)
-
-        speed_box.pack_start(download_box, False, False, 0)
-
-        # Add right-aligned refresh button
-        refresh_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        refresh_button = Gtk.Button()
-        refresh_button.set_tooltip_text("Refresh Networks")
-        refresh_icon = Gtk.Image.new_from_icon_name(
-            "view-refresh-symbolic", Gtk.IconSize.BUTTON
-        )
-        refresh_button.add(refresh_icon)
-        refresh_button.connect("clicked", self.refresh_wifi)
-        refresh_box.pack_end(refresh_button, False, False, 0)
-
-        speed_box.pack_end(refresh_box, True, True, 0)
-
-        self.pack_start(speed_box, False, False, 0)
-
-        # Network list with scrolling
-        scroll_window = Gtk.ScrolledWindow(name="wifi-scrollable")
+        # Create scrollable content
+        scroll_window = Gtk.ScrolledWindow()
         scroll_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         scroll_window.set_vexpand(True)
 
-        self.wifi_listbox = Gtk.ListBox()
-        self.wifi_listbox.set_selection_mode(Gtk.SelectionMode.SINGLE)
-        self.wifi_listbox.set_activate_on_single_click(False)
-        self.wifi_listbox.connect("row-activated", self.on_network_row_activated)
+        # Create main content box
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
 
-        scroll_window.add(self.wifi_listbox)
+        # WiFi power switch
+        power_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        power_label = Gtk.Label(label="Wi-Fi")
+        power_label.set_halign(Gtk.Align.START)
+        self.power_switch = Gtk.Switch()
+
+        if self.wifi_supported:
+            self.power_switch.set_active(get_wifi_status())
+            self.power_switch.connect("notify::active", self.on_power_switched)
+        else:
+            self.power_switch.set_sensitive(False)
+
+        power_box.pack_start(power_label, False, True, 0)
+        power_box.pack_end(self.power_switch, False, True, 0)
+        content_box.pack_start(power_box, False, True, 0)
+
+        networks_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        # Network list section
+        networks_label = Gtk.Label()
+        networks_label.set_markup("<b>Available Networks</b>")
+        networks_label.set_halign(Gtk.Align.START)
+        networks_box.pack_start(networks_label, False, False, 0)
+        # Add refresh button
+        refresh_button = Gtk.Button(label="scan")
+        refresh_button.connect("clicked", self.on_refresh_clicked)
+        networks_box.pack_end(refresh_button, False, False, 0)
+
+        content_box.pack_start(networks_box, False, False, 0)
+        # Disable refresh button if WiFi is not supported
+        if not self.wifi_supported:
+            refresh_button.set_sensitive(False)
+
+        content_box.pack_start(networks_label, False, True, 0)
+
+        # Network list
+        networks_frame = Gtk.Frame()
+        networks_frame.set_shadow_type(Gtk.ShadowType.IN)
+        self.networks_box = Gtk.ListBox()
+        self.networks_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        networks_frame.add(self.networks_box)
+        content_box.pack_start(networks_frame, True, True, 0)
+
+        # Add the content box to the scroll window
+        scroll_window.add(content_box)
         self.pack_start(scroll_window, True, True, 0)
 
-        # Action buttons
+        # Action buttons - moved outside of the scrollable area
         action_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        action_box.set_margin_top(10)
-
         connect_button = Gtk.Button(label="Connect")
-        connect_button.get_style_context().add_class("suggested-action")
-        connect_button.connect("clicked", self.connect_wifi)
+        connect_button.connect("clicked", self.on_connect_clicked)
         action_box.pack_start(connect_button, True, True, 0)
 
         disconnect_button = Gtk.Button(label="Disconnect")
-        disconnect_button.connect("clicked", self.disconnect_wifi)
+        disconnect_button.connect("clicked", self.on_disconnect_clicked)
         action_box.pack_start(disconnect_button, True, True, 0)
 
-        forget_button = Gtk.Button(label="Forget Network")
-        forget_button.connect("clicked", self.forget_wifi)
+        forget_button = Gtk.Button(label="Forget")
+        forget_button.connect("clicked", self.on_forget_clicked)
         action_box.pack_start(forget_button, True, True, 0)
 
-        self.pack_start(action_box, False, False, 0)
+        # Add action buttons directly to the main container (outside scroll window)
+        self.pack_start(action_box, False, True, 0)
 
-#        GLib.idle_add(self.refresh_wifi, None)
-        self.current_ssid: str | None = None
-        GLib.idle_add(self.refresh_currently_connected_ssid, None)
+        # Initial network list population is now deferred
+        # self.update_network_list()  <- This line is removed
 
-        GLib.timeout_add_seconds(1, self.update_network_speed)
+        # Start network speed updates
+        #        GLib.timeout_add(1000, self.update_network_speed)
 
-    def refresh_currently_connected_ssid(self, _):
+        GLib.idle_add(self.refresh_currently_connected_ssid)
+
+        # Previous speed values for calculation
+        self.prev_rx_bytes = 0
+        self.prev_tx_bytes = 0
+
+    def load_networks(self):
+        """Load WiFi networks list - to be called after all tabs are loaded"""
+        logger.info("Loading WiFi networks after tabs initialization")
+        # Add a loading indicator
+        row = Gtk.ListBoxRow()
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        box.set_margin_start(10)
+        box.set_margin_end(10)
+        box.set_margin_top(10)
+        box.set_margin_bottom(10)
+
+        spinner = Gtk.Spinner()
+        spinner.start()
+        box.pack_start(spinner, False, False, 0)
+
+        label = Gtk.Label(label="Loading networks...")
+        label.set_halign(Gtk.Align.START)
+        box.pack_start(label, True, True, 0)
+
+        row.add(box)
+        self.networks_box.add(row)
+        self.networks_box.show_all()
+
+        # Start network scan in background thread
+        thread = threading.Thread(target=self._load_networks_thread)
+        thread.daemon = True
+        thread.start()
+
+    def _load_networks_thread(self):
+        """Background thread to load WiFi networks"""
+        try:
+            # Get networks
+            networks = get_wifi_networks()
+            logger.info(f"Found {len(networks)} WiFi networks")
+            # Update UI in main thread
+            GLib.idle_add(self._update_networks_in_ui, networks)
+
+        except Exception as e:
+            logger.error(f"Failed loading WiFi networks: {e}")
+            # Show error in UI
+            GLib.idle_add(self._show_network_error, str(e))
+
+    def _update_networks_in_ui(self, networks):
+        """Update UI with networks (called in main thread)"""
+        try:
+            # Clear existing networks
+            for child in self.networks_box.get_children():
+                self.networks_box.remove(child)
+            # No networks found case
+            if not networks:
+                row = Gtk.ListBoxRow()
+                box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+                box.set_margin_start(10)
+                box.set_margin_end(10)
+                box.set_margin_top(10)
+                box.set_margin_bottom(10)
+
+                # Check if WiFi is supported by looking at the interfaces
+                result = subprocess.run(
+                    ["nmcli", "-t", "-f", "DEVICE,TYPE", "device"],
+                    capture_output=True,
+                    text=True,
+                )
+                wifi_interfaces = [
+                    line for line in result.stdout.split("\n") if "wifi" in line
+                ]
+                if not wifi_interfaces:
+                    # WiFi not supported
+                    error_icon = Gtk.Image.new_from_icon_name(
+                        "dialog-error-symbolic", Gtk.IconSize.MENU
+                    )
+                    box.pack_start(error_icon, False, False, 0)
+                    label = Gtk.Label(label="WiFi is not supported on this machine")
+                else:
+                    label = Gtk.Label(label="No networks found")
+
+                label.set_halign(Gtk.Align.START)
+                box.pack_start(label, True, True, 0)
+
+                row.add(box)
+                self.networks_box.add(row)
+                self.networks_box.show_all()
+                return False
+            # Add networks
+            for network in networks:
+                row = Gtk.ListBoxRow()
+                box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+                box.set_margin_start(10)
+                box.set_margin_end(10)
+                box.set_margin_top(6)
+                box.set_margin_bottom(6)
+
+                # Signal strength indicator icon
+                try:
+                    signal_strength = int(network["signal"])
+                except (ValueError, TypeError):
+                    signal_strength = 0  # Default to lowest if conversion fails
+                if signal_strength >= 80:
+                    icon_name = "network-wireless-signal-excellent-symbolic"
+                elif signal_strength >= 60:
+                    icon_name = "network-wireless-signal-good-symbolic"
+                elif signal_strength >= 40:
+                    icon_name = "network-wireless-signal-ok-symbolic"
+                elif signal_strength > 0:
+                    icon_name = "network-wireless-signal-weak-symbolic"
+                else:
+                    icon_name = "network-wireless-signal-none-symbolic"
+                signal_icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.MENU)
+                box.pack_start(signal_icon, False, False, 0)
+
+                # Network name and details container
+                info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
+                # Network name
+                name_label = Gtk.Label()
+                name_label.set_halign(Gtk.Align.START)
+                if network["in_use"]:
+                    name_label.set_markup(
+                        f"<b>{GLib.markup_escape_text(network['ssid'])}</b>"
+                    )
+                else:
+                    name_label.set_text(network["ssid"])
+                info_box.pack_start(name_label, False, True, 0)
+
+                # Network details (security and signal strength)
+                details_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                # Security info
+                security_text = network["security"]
+                if security_text.lower() == "none":
+                    security_text = "Open"
+                details_label = Gtk.Label()
+                details_label.set_markup(
+                    f"<small>{GLib.markup_escape_text(security_text)} • Signal: {signal_strength}%</small>"
+                )
+                details_label.set_halign(Gtk.Align.START)
+                details_box.pack_start(details_label, False, True, 0)
+                info_box.pack_start(details_box, False, True, 0)
+                box.pack_start(info_box, True, True, 0)
+
+                # Connected indicator (moved before security icon)
+                if network["in_use"]:
+                    connected_icon = Gtk.Image.new_from_icon_name(
+                        "emblem-ok-symbolic", Gtk.IconSize.MENU
+                    )
+                    connected_label = Gtk.Label(label="Connected")
+                    connected_label.get_style_context().add_class("dim-label")
+                    connected_box = Gtk.Box(
+                        orientation=Gtk.Orientation.HORIZONTAL, spacing=5
+                    )
+                    connected_box.pack_start(connected_icon, False, False, 0)
+                    connected_box.pack_start(connected_label, False, False, 0)
+                    box.pack_start(connected_box, False, True, 0)
+
+                # Security icon
+                if network["security"].lower() != "none":
+                    lock_icon = Gtk.Image.new_from_icon_name(
+                        "system-lock-screen-symbolic", Gtk.IconSize.MENU
+                    )
+                    box.pack_end(lock_icon, False, False, 0)
+
+                row.add(box)
+                self.networks_box.add(row)
+
+            self.networks_box.show_all()
+
+            GLib.idle_add(self.refresh_currently_connected_ssid)
+        except Exception as e:
+            logger.error(f"Failed updating networks in UI: {e}")
+            self._show_network_error(str(e))
+
+        return False  # Required for GLib.idle_add
+
+    def _show_network_error(self, error_message):
+        """Show an error message in the networks list"""
+        # Clear existing networks
+        for child in self.networks_box.get_children():
+            self.networks_box.remove(child)
+        # Add error message
+        row = Gtk.ListBoxRow()
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        box.set_margin_start(10)
+        box.set_margin_end(10)
+        box.set_margin_top(10)
+        box.set_margin_bottom(10)
+
+        error_icon = Gtk.Image.new_from_icon_name(
+            "dialog-error-symbolic", Gtk.IconSize.MENU
+        )
+        box.pack_start(error_icon, False, False, 0)
+
+        label = Gtk.Label(label=f"Failed loading networks: {error_message}")
+        label.set_halign(Gtk.Align.START)
+        box.pack_start(label, True, True, 0)
+
+        row.add(box)
+        self.networks_box.add(row)
+        self.networks_box.show_all()
+
+        return False  # Required for GLib.idle_add
+
+    def update_network_list(self):
+        """Update the list of WiFi networks"""
+        logger.info("Refreshing WiFi networks list")
+
+        # Clear existing networks
+        for child in self.networks_box.get_children():
+            self.networks_box.remove(child)
+
+        # Add loading indicator
+        row = Gtk.ListBoxRow()
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        box.set_margin_start(10)
+        box.set_margin_end(10)
+        box.set_margin_top(10)
+        box.set_margin_bottom(10)
+
+        spinner = Gtk.Spinner()
+        spinner.start()
+        box.pack_start(spinner, False, False, 0)
+
+        label = Gtk.Label(label="Loading networks...")
+        label.set_halign(Gtk.Align.START)
+        box.pack_start(label, True, True, 0)
+
+        row.add(box)
+        self.networks_box.add(row)
+        self.networks_box.show_all()
+
+        # Start network scan in background thread
+        thread = threading.Thread(target=self._load_networks_thread)
+        thread.daemon = True
+        thread.start()
+
+    def on_power_switched(self, switch, gparam):
+        """Handle WiFi power switch toggle"""
+        state = switch.get_active()
+        logger.info(f"Setting WiFi power: {'ON' if state else 'OFF'}")
+
+        # Run power toggle in a background thread to avoid UI freezing
+        def power_toggle_thread():
+            try:
+                set_wifi_power(state)
+                GLib.idle_add(
+                    lambda: self.emit("power-status-changed", state)
+                )
+                if state:
+                    # If Wi-Fi was turned on, update networks list
+                    GLib.idle_add(self.update_network_list)
+            except Exception as e:
+                logger.error(f"Failed setting WiFi power: {e}")
+
+        # Start thread
+        thread = threading.Thread(target=power_toggle_thread)
+        thread.daemon = True
+        thread.start()
+
+    def on_refresh_clicked(self, button):
+        """Handle refresh button click"""
+        logger.info("Manual refresh of WiFi networks requested")
+        self.update_network_list()
+
+    def on_connect_clicked(self, button):
+        """Handle connect button click"""
+        row = self.networks_box.get_selected_row()
+        if row is None:
+            return
+
+        box = row.get_child()
+        info_box = box.get_children()[1]
+        name_label = info_box.get_children()[0]
+        ssid = name_label.get_text()
+        # If network name is formatted with markup, strip the markup
+        if not ssid:
+            ssid = name_label.get_label()
+            ssid = ssid.replace("<b>", "").replace("</b>", "")
+
+        logger.info(f"Connecting to WiFi network: {ssid}")
+
+        # Show connecting indicator in list
+        for child in self.networks_box.get_children():
+            if child == row:
+                # Update the selected row to show connecting status
+                old_box = child.get_child()
+                child.remove(old_box)
+                new_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+                new_box.set_margin_start(10)
+                new_box.set_margin_end(10)
+                new_box.set_margin_top(6)
+                new_box.set_margin_bottom(6)
+                # Add spinner
+                spinner = Gtk.Spinner()
+                spinner.start()
+                new_box.pack_start(spinner, False, False, 0)
+                # Add label
+                connecting_label = Gtk.Label(label=f"Connecting to {ssid}...")
+                connecting_label.set_halign(Gtk.Align.START)
+                new_box.pack_start(connecting_label, True, True, 0)
+
+                child.add(new_box)
+                child.show_all()
+                break
+
+        # Try connecting in background thread
+        def connect_thread():
+            try:
+                # First try to connect without password
+                success = connect_network(ssid)
+                if success:
+                    # Successfully connected
+                    GLib.idle_add(self.update_network_list)
+                    return
+                # If connection failed, show password dialog on main thread
+                GLib.idle_add(self._show_password_dialog, ssid)
+            except Exception as e:
+                logger.error(f"Failed connecting to network: {e}")
+                GLib.idle_add(
+                    self.update_network_list
+                )  # Refresh to clear connecting status
+
+        # Start connection thread
+        thread = threading.Thread(target=connect_thread)
+        thread.daemon = True
+        thread.start()
+
+    def _show_password_dialog(self, ssid):
+        """Show password dialog for secured networks"""
+        networks = get_wifi_networks()
+        network = next((n for n in networks if n["ssid"] == ssid), None)
+        if network and network["security"].lower() != "none":
+            dialog = Gtk.Dialog(
+                title=f"Connect to {ssid}",
+                parent=self.get_toplevel(),
+                flags=0,
+                buttons=(
+                    Gtk.STOCK_CANCEL,
+                    Gtk.ResponseType.CANCEL,
+                    Gtk.STOCK_OK,
+                    Gtk.ResponseType.OK,
+                ),
+            )
+
+            box = dialog.get_content_area()
+            box.set_spacing(10)
+            box.set_margin_start(10)
+            box.set_margin_end(10)
+            box.set_margin_top(10)
+            box.set_margin_bottom(10)
+
+            password_label = Gtk.Label(label="Password:")
+            box.add(password_label)
+
+            password_entry = Gtk.Entry()
+            password_entry.set_visibility(False)
+            password_entry.set_invisible_char("●")
+            box.add(password_entry)
+
+            remember_check = Gtk.CheckButton(label="Remember this network")
+            remember_check.set_active(True)
+            box.add(remember_check)
+
+            dialog.show_all()
+            response = dialog.run()
+
+            if response == Gtk.ResponseType.OK:
+                password = password_entry.get_text()
+                remember = remember_check.get_active()
+                dialog.destroy()
+
+                # Connect with password in background thread
+                def connect_with_password_thread():
+                    try:
+                        if connect_network(ssid, password, remember):
+                            GLib.idle_add(self.update_network_list)
+                        else:
+                            # Failed to connect, just refresh UI to clear status
+                            GLib.idle_add(self.update_network_list)
+                    except Exception as e:
+                        logger.error(f"Failed connecting to network with password: {e}")
+                        GLib.idle_add(self.update_network_list)
+
+                thread = threading.Thread(target=connect_with_password_thread)
+                thread.daemon = True
+                thread.start()
+            else:
+                dialog.destroy()
+                # User cancelled, refresh UI to clear status
+                self.update_network_list()
+        else:
+            # No security or network not found, just refresh UI
+            self.update_network_list()
+        return False  # Required for GLib.idle_add
+
+    def on_disconnect_clicked(self, button):
+        """Handle disconnect button click"""
+        row = self.networks_box.get_selected_row()
+        if row is None:
+            return
+
+        box = row.get_child()
+        info_box = box.get_children()[1]
+        name_label = info_box.get_children()[0]
+        ssid = name_label.get_text()
+        # If network name is formatted with markup, strip the markup
+        if not ssid:
+            ssid = name_label.get_label()
+            ssid = ssid.replace("<b>", "").replace("</b>", "")
+
+        logger.info(f"Disconnecting from WiFi network: {ssid}")
+
+        # Show disconnecting indicator
+        for child in self.networks_box.get_children():
+            if child == row:
+                # Update the selected row to show disconnecting status
+                old_box = child.get_child()
+                child.remove(old_box)
+                new_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+                new_box.set_margin_start(10)
+                new_box.set_margin_end(10)
+                new_box.set_margin_top(6)
+                new_box.set_margin_bottom(6)
+                # Add spinner
+                spinner = Gtk.Spinner()
+                spinner.start()
+                new_box.pack_start(spinner, False, False, 0)
+                # Add label
+                disconnecting_label = Gtk.Label(label=f"Disconnecting from {ssid}...")
+                disconnecting_label.set_halign(Gtk.Align.START)
+                new_box.pack_start(disconnecting_label, True, True, 0)
+
+                child.add(new_box)
+                child.show_all()
+                break
+
+        # Run disconnect in separate thread
+        thread = threading.Thread(target=self._disconnect_thread, args=(ssid,))
+        thread.daemon = True
+        thread.start()
+
+    def on_forget_clicked(self, button):
+        """Handle forget button click"""
+        row = self.networks_box.get_selected_row()
+        if row is None:
+            return
+
+        box = row.get_child()
+        info_box = box.get_children()[1]
+        name_label = info_box.get_children()[0]
+        ssid = name_label.get_text()
+        # If network name is formatted with markup, strip the markup
+        if not ssid:
+            ssid = name_label.get_label()
+            ssid = ssid.replace("<b>", "").replace("</b>", "")
+        logger.info(f"Forgetting WiFi network: {ssid}")
+
+        dialog = Gtk.MessageDialog(
+            transient_for=self.get_toplevel(),
+            flags=0,
+            message_type=Gtk.MessageType.QUESTION,
+            buttons=Gtk.ButtonsType.YES_NO,
+            text=f"Forget network {ssid}?",
+        )
+        dialog.format_secondary_text(
+            "This will remove all saved settings for this network."
+        )
+
+        response = dialog.run()
+        dialog.destroy()
+
+        if response == Gtk.ResponseType.YES:
+            # Show forgetting indicator
+            for child in self.networks_box.get_children():
+                if child == row:
+                    # Update the selected row to show forgetting status
+                    old_box = child.get_child()
+                    child.remove(old_box)
+                    new_box = Gtk.Box(
+                        orientation=Gtk.Orientation.HORIZONTAL, spacing=10
+                    )
+                    new_box.set_margin_start(10)
+                    new_box.set_margin_end(10)
+                    new_box.set_margin_top(6)
+                    new_box.set_margin_bottom(6)
+                    # Add spinner
+                    spinner = Gtk.Spinner()
+                    spinner.start()
+                    new_box.pack_start(spinner, False, False, 0)
+                    # Add label
+                    forgetting_label = Gtk.Label(label=f"Forgetting {ssid}...")
+                    forgetting_label.set_halign(Gtk.Align.START)
+                    new_box.pack_start(forgetting_label, True, True, 0)
+
+                    child.add(new_box)
+                    child.show_all()
+                    break
+
+            # Run forget in background thread
+            def forget_thread():
+                try:
+                    if forget_network(ssid):
+                        GLib.idle_add(self.update_network_list)
+                    else:
+                        # Failed to forget, just refresh UI
+                        GLib.idle_add(self.update_network_list)
+                except Exception as e:
+                    logger.error(f"Failed forgetting network: {e}")
+                    GLib.idle_add(self.update_network_list)
+
+            thread = threading.Thread(target=forget_thread)
+            thread.daemon = True
+            thread.start()
+
+    def _disconnect_thread(self, ssid):
+        """Thread function to disconnect from a WiFi network"""
+        try:
+            if disconnect_network(ssid):
+                GLib.idle_add(self.update_network_list)
+                logger.info(f"Successfully disconnected from {ssid}")
+            else:
+                logger.error(f"Failed to disconnect from {ssid}")
+                GLib.idle_add(self.update_network_list)
+        except Exception as e:
+            logger.error(f"Failed disconnecting from network: {e}")
+            GLib.idle_add(self.update_network_list)
+
+    def refresh_currently_connected_ssid(self, *_):
         self.current_ssid = fetch_currently_connected_ssid()
         if self.current_ssid:
             self.emit("connected", self.current_ssid)
 
 
-    def refresh_wifi(self, button=None):
-        """Refresh the list of Wi-Fi networks."""
-
-        # Prevent multiple simultaneous refreshes
-        if getattr(self, "_is_refreshing", False):
-            return
-        self._is_refreshing = True
-
-        # Clear existing entries
-        for child in self.wifi_listbox.get_children():
-            self.wifi_listbox.remove(child)
-
-        # Check if a Wi-Fi device exists
-        wifi_devices = subprocess.getoutput("nmcli -t device status | grep wifi")
-        if not wifi_devices:
-            error_label = Gtk.Label(label="No Wi-Fi device found")
-            error_label.get_style_context().add_class("error-label")
-            self.wifi_listbox.add(error_label)
-            error_label.show()
-
-            # Disable the Wi-Fi switch
-            self.wifi_status_switch.set_sensitive(False)
-
-            self._is_refreshing = False  # Allow future refreshes
-            return  # Stop further execution
-        else:
-            ssid = wifi_devices.splitlines()[0].split(":")[-1]
-            self.emit("connected", ssid)
-
-        # Enable the Wi-Fi switch if a device is found
-        self.wifi_status_switch.set_sensitive(True)
-
-        # Run the refresh in a separate thread
-        thread = threading.Thread(target=self._refresh_wifi_thread)
-        thread.daemon = True
-        thread.start()
-
-    def _refresh_wifi_thread(self):
-        # We don't need the tabular format anymore as we'll use the standard output format
-        # directly for all operations
-        try:
-            # Use rescan to make it faster for subsequent calls
-            if hasattr(self, "_wifi_scanned_once") and self._wifi_scanned_once:
-                # Just update the list without rescanning - much faster
-                pass
-            else:
-                # On first scan, try to be quicker by using a short timeout
-                try:
-                    subprocess.run(["nmcli", "device", "wifi", "rescan"], timeout=1)
-                except subprocess.TimeoutExpired:
-                    # This is normal, it might take longer than our timeout
-                    pass
-                self._wifi_scanned_once = True
-
-            GLib.idle_add(self._update_wifi_list)
-        except Exception as e:
-            print(f"Error in refresh WiFi thread: {e}")
-            self._is_refreshing = False
-
-    def _update_wifi_list(self, networks=None):
-        # First store the selected row's SSID if any
-        selected_row = self.wifi_listbox.get_selected_row()
-        selected_ssid = selected_row.get_ssid() if selected_row else None
-
-        # Clear the existing list
-        self.wifi_listbox.foreach(lambda row: self.wifi_listbox.remove(row))
-
-        # Get the full information once for display in the UI
-        try:
-            # Use fields parameter to get a more consistent format, including SIGNAL explicitly
-            full_networks = subprocess.getoutput(
-                "nmcli -t -f IN-USE,SSID,SECURITY,SIGNAL dev wifi list"
-            ).split("\n")
-            full_networks = [network.split(":") for network in full_networks] # split by delimiter ":"
-
-            # sort by connected status then alphabeticaly by SSID
-            full_networks.sort(key=lambda v: (v[0] != "*", v[1]))
-
-
-            print(full_networks)
-
-            # Add networks and keep track of the previously selected one
-            previously_selected_row = None
-
-            for network in full_networks:
-                if network[1] != "": # remove blank entries
-                    row = WiFiNetworkRow(network)
-                    self.wifi_listbox.add(row)
-
-                    # If this was the previously selected network, remember it
-                    if selected_ssid and row.get_ssid() == selected_ssid:
-                        previously_selected_row = row
-
-            self.wifi_listbox.show_all()
-
-            # Reselect the previously selected network if it still exists
-            if previously_selected_row:
-                self.wifi_listbox.select_row(previously_selected_row)
-
-            # Update the Wi-Fi status switch based on actual Wi-Fi state
-            try:
-                wifi_status = subprocess.getoutput("nmcli radio wifi").strip()
-                self.wifi_status_switch.set_active(wifi_status.lower() == "enabled")
-            except Exception as e:
-                print(f"Error getting Wi-Fi status: {e}")
-
-        except Exception as e:
-            print(f"Error updating WiFi list: {e}")
-
-        # Reset the flag
-        self._is_refreshing = False
-
-        return False  # Stop the timeout
-
-    def on_wifi_switch_toggled(self, switch, gparam):
-        active = switch.get_active()
-        print(f"User toggled Wi-Fi switch to {'ON' if active else 'OFF'}")
-
-        if active:
-            try:
-                subprocess.run(["nmcli", "radio", "wifi", "on"], check=True)
-                self.refresh_wifi(None)
-            except subprocess.CalledProcessError as e:
-                print(f"Failed to enable Wi-Fi: {e}")
-        else:
-            try:
-                subprocess.run(["nmcli", "radio", "wifi", "off"], check=True)
-                self.wifi_listbox.foreach(lambda row: self.wifi_listbox.remove(row))
-            except subprocess.CalledProcessError as e:
-                print(f"Failed to disable Wi-Fi: {e}")
-
-    def forget_wifi(self, button):
-        selected_row = self.wifi_listbox.get_selected_row()
-        if not selected_row:
-            return
-
-        ssid = selected_row.get_ssid()
-
-        # Show confirmation dialog
-        dialog = Gtk.MessageDialog(
-            transient_for=None,
-            modal=True,
-            destroy_with_parent=True,
-            message_type=Gtk.MessageType.QUESTION,
-            buttons=Gtk.ButtonsType.YES_NO,
-            text=f"Forget Wi-Fi Network",
-        )
-        dialog.format_secondary_text(
-            f"Are you sure you want to forget the network '{ssid}'?"
-        )
-        response = dialog.run()
-        dialog.destroy()
-
-        if response != Gtk.ResponseType.YES:
-            return
-
-        try:
-            # With our new approach, we can delete the connection directly by its name (SSID)
-            subprocess.run(["nmcli", "connection", "delete", ssid], check=True)
-            print(f"Successfully forgot network '{ssid}'")
-            self.refresh_wifi(None)
-        except subprocess.CalledProcessError as e:
-            print(f"Failed to forget network: {e}")
-
-    def disconnect_wifi(self, button):
-        try:
-            # First approach: Try to find WiFi device that's connected
-            connected_wifi_device = subprocess.getoutput(
-                "nmcli -t -f DEVICE,STATE dev | grep wifi.*:connected"
-            )
-            print(f"Debug - connected wifi device: {connected_wifi_device}")
-
-            if connected_wifi_device:
-                # Extract device name
-                wifi_device = connected_wifi_device.split(":")[0]
-                print(f"Debug - Found connected wifi device: {wifi_device}")
-
-                # Get connection name for this device
-                device_connection = subprocess.getoutput(
-                    f"nmcli -t -f NAME,DEVICE con show --active | grep {wifi_device}"
-                )
-                print(f"Debug - device connection: {device_connection}")
-
-                if device_connection and ":" in device_connection:
-                    connection_name = device_connection.split(":")[0]
-                    print(f"Debug - Found connection name: {connection_name}")
-
-                    # Disconnect this connection
-                    print(f"Disconnecting from WiFi connection: {connection_name}")
-                    subprocess.run(
-                        ["nmcli", "con", "down", connection_name], check=True
-                    )
-                    print(f"Disconnected from WiFi network: {connection_name}")
-                    self.refresh_wifi(None)
-                    return
-
-            # Second approach: Try checking all active WiFi connections
-            active_connections = subprocess.getoutput(
-                "nmcli -t -f NAME,TYPE con show --active"
-            ).split("\n")
-            print(f"Debug - all active connections: {active_connections}")
-
-            for conn in active_connections:
-                if ":" in conn and (
-                    "wifi" in conn.lower() or "802-11-wireless" in conn.lower()
-                ):
-                    connection_name = conn.split(":")[0]
-                    print(
-                        f"Debug - Found WiFi connection from active list: {connection_name}"
-                    )
-                    subprocess.run(
-                        ["nmcli", "con", "down", connection_name], check=True
-                    )
-                    print(f"Disconnected from WiFi network: {connection_name}")
-                    self.refresh_wifi(None)
-                    return
-
-            # If we got here, no WiFi connection was found
-            print("No active Wi-Fi connection found")
-
-        except subprocess.CalledProcessError as e:
-            print(f"Failed to disconnect: {e}")
-        except Exception as e:
-            print(f"General error during disconnect: {e}")
-
-    def update_network_speed(self):
-        """Measure and update the network speed."""
-        try:
-            # Get network interfaces
-            interfaces = subprocess.getoutput(
-                "nmcli -t -f DEVICE,TYPE device | grep wifi"
-            ).split("\n")
-            wifi_interfaces = [line.split(":")[0] for line in interfaces if ":" in line]
-
-            if not wifi_interfaces:
-                self.upload_label.set_text("0 KB/s")
-                self.download_label.set_text("0 KB/s")
-                return True
-
-            # Use the first Wi-Fi interface for simplicity
-            interface = wifi_interfaces[0]
-
-            # Get current transmit and receive bytes
-            rx_bytes = int(
-                subprocess.getoutput(
-                    f"cat /sys/class/net/{interface}/statistics/rx_bytes"
-                )
-            )
-            tx_bytes = int(
-                subprocess.getoutput(
-                    f"cat /sys/class/net/{interface}/statistics/tx_bytes"
-                )
-            )
-
-            # Store current values
-            if not hasattr(self, "prev_rx_bytes"):
-                self.prev_rx_bytes = rx_bytes
-                self.prev_tx_bytes = tx_bytes
-                return True
-
-            # Calculate speed
-            rx_speed = rx_bytes - self.prev_rx_bytes
-            tx_speed = tx_bytes - self.prev_tx_bytes
-
-            # Update previous values
-            self.prev_rx_bytes = rx_bytes
-            self.prev_tx_bytes = tx_bytes
-
-            # Format for display
-            def format_speed(bytes_per_sec):
-                if bytes_per_sec > 1048576:  # 1 MB
-                    return f"{bytes_per_sec/1048576:.1f} MB/s"
-                elif bytes_per_sec > 1024:  # 1 KB
-                    return f"{bytes_per_sec/1024:.1f} KB/s"
-                else:
-                    return f"{bytes_per_sec} B/s"
-
-            self.download_label.set_text(format_speed(rx_speed))
-            self.upload_label.set_text(format_speed(tx_speed))
-        except Exception as e:
-            print(f"Error updating network speed: {e}")
-
-        return True  # Continue the timer
-    def on_network_row_activated(self, listbox, row):
-        """Handle activation of a network row by connecting to it."""
-        if row:
-            self.connect_wifi(None)
-
-    def show_wifi_password_dialog(self, ssid, security_type="WPA"):
-        """Display a polished dialog for entering WiFi password."""
-        dialog = Gtk.Dialog(
-            title=f"Connect to {ssid}",
-            transient_for=None,
-            modal=True,
-            destroy_with_parent=True,
-        )
-
-        # Make the dialog look nice
-        dialog.set_default_size(400, -1)
-        dialog.set_border_width(10)
-        content_area = dialog.get_content_area()
-        content_area.set_spacing(10)
-
-        # Add header with network icon and name
-        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        header_box.set_margin_bottom(15)
-
-        # Network icon based on signal strength
-        network_icon = Gtk.Image.new_from_icon_name(
-            "network-wireless-signal-excellent-symbolic", Gtk.IconSize.DIALOG
-        )
-        header_box.pack_start(network_icon, False, False, 0)
-
-        # Network name with security info
-        name_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
-        network_name = Gtk.Label()
-        network_name.set_markup(f"<b>{ssid}</b>")
-        network_name.set_halign(Gtk.Align.START)
-        name_box.pack_start(network_name, False, False, 0)
-
-        # Security type
-        security_label = Gtk.Label(label=f"Security: {security_type}")
-        security_label.set_halign(Gtk.Align.START)
-        security_label.get_style_context().add_class("dim-label")
-        name_box.pack_start(security_label, False, False, 0)
-
-        header_box.pack_start(name_box, True, True, 0)
-        content_area.pack_start(header_box, False, False, 0)
-
-        # Add separator
-        separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
-        content_area.pack_start(separator, False, False, 0)
-
-        # Add message
-        message = Gtk.Label()
-        message.set_markup(
-            "<span size='medium'>This network is password-protected. Please enter the password to connect.</span>"
-        )
-        message.set_line_wrap(True)
-        message.set_max_width_chars(50)
-        message.set_margin_top(10)
-        message.set_margin_bottom(10)
-        content_area.pack_start(message, False, False, 0)
-
-        # Add password entry
-        password_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        password_box.set_margin_top(5)
-        password_box.set_margin_bottom(15)
-
-        password_label = Gtk.Label(label="Password:")
-        password_box.pack_start(password_label, False, False, 0)
-
-        password_entry = Gtk.Entry()
-        password_entry.set_visibility(False)
-        password_entry.set_width_chars(25)
-        password_entry.set_placeholder_text("Enter network password")
-
-        # Add show/hide password button
-        password_entry.set_icon_from_icon_name(
-            Gtk.EntryIconPosition.SECONDARY, "view-conceal-symbolic"
-        )
-        password_entry.connect("icon-press", self._on_password_dialog_icon_pressed)
-
-        password_box.pack_start(password_entry, True, True, 0)
-        content_area.pack_start(password_box, False, False, 0)
-
-        # Remember checkbox
-        remember_check = Gtk.CheckButton(label="Remember this network")
-        remember_check.set_active(True)
-        content_area.pack_start(remember_check, False, False, 0)
-
-        # Add custom styled buttons
-        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        button_box.set_halign(Gtk.Align.END)
-        button_box.set_margin_top(10)
-
-        cancel_button = Gtk.Button(label="Cancel")
-        cancel_button.connect(
-            "clicked", lambda w: dialog.response(Gtk.ResponseType.CANCEL)
-        )
-        button_box.pack_start(cancel_button, False, False, 0)
-
-        connect_button = Gtk.Button(label="Connect")
-        connect_button.get_style_context().add_class("suggested-action")
-        connect_button.connect(
-            "clicked", lambda w: dialog.response(Gtk.ResponseType.OK)
-        )
-        button_box.pack_start(connect_button, False, False, 0)
-        content_area.pack_start(button_box, False, False, 0)
-
-        # Set the default button (respond to Enter key)
-        connect_button.set_can_default(True)
-        dialog.set_default(connect_button)
-
-        # Set focus to password entry
-        password_entry.grab_focus()
-
-        # Make sure the dialog is fully displayed
-        dialog.show_all()
-
-        # Run the dialog and get the response
-        response = dialog.run()
-
-        # Get entered password if dialog was not canceled
-        password = (
-            password_entry.get_text() if response == Gtk.ResponseType.OK else None
-        )
-        remember = (
-            remember_check.get_active() if response == Gtk.ResponseType.OK else False
-        )
-
-        # Destroy the dialog
-        dialog.destroy()
-
-        return password, remember, response == Gtk.ResponseType.OK
-
-    def _on_password_dialog_icon_pressed(self, entry, icon_pos, event):
-        """Toggle password visibility in the password dialog."""
-        current_visibility = entry.get_visibility()
-        entry.set_visibility(not current_visibility)
-
-        if current_visibility:
-            entry.set_icon_from_icon_name(
-                Gtk.EntryIconPosition.SECONDARY, "view-conceal-symbolic"
-            )
-        else:
-            entry.set_icon_from_icon_name(
-                Gtk.EntryIconPosition.SECONDARY, "view-reveal-symbolic"
-            )
-
-    def connect_wifi(self, button):
-        # Prevent multiple connection attempts at the same time
-        if getattr(self, "_is_connecting", False):
-            return
-
-        selected_row = self.wifi_listbox.get_selected_row()
-        if not selected_row:
-            return
-
-        ssid = selected_row.get_ssid()
-        is_secured = selected_row.is_secured()
-
-        # Set connecting flag
-        self._is_connecting = True
-
-        # Get password if needed
-        password = None
-        remember = True
-        success = True
-
-        if is_secured:
-            # Check if the network already has a saved connection profile
-            try:
-                check_saved = subprocess.run(
-                    ["nmcli", "-t", "-f", "name", "connection", "show"],
-                    capture_output=True,
-                    text=True,
-                )
-                saved_connections = check_saved.stdout.strip().split("\n")
-                has_saved_profile = ssid in saved_connections
-            except Exception as e:
-                print(f"Error checking saved connections: {e}")
-                has_saved_profile = False
-
-            # Only show password dialog if the network doesn't have a saved profile
-            if not has_saved_profile:
-                security_type = selected_row.get_security() or "WPA"
-                password, remember, success = self.show_wifi_password_dialog(
-                    ssid, security_type
-                )
-
-                # If user canceled, abort connection
-                if not success:
-                    GLib.idle_add(lambda: setattr(self, "_is_connecting", False))
-                    return
-
-
-        def connect_thread():
-            try:
-                if is_secured:
-                    # Check if we have a saved profile
-                    has_saved_profile = False
-                    try:
-                        check_saved = subprocess.run(
-                            ["nmcli", "-t", "-f", "name", "connection", "show"],
-                            capture_output=True,
-                            text=True,
-                        )
-                        saved_connections = check_saved.stdout.strip().split("\n")
-                        has_saved_profile = ssid in saved_connections
-                    except Exception as e:
-                        print(f"Error checking saved connections in thread: {e}")
-
-                    if has_saved_profile:
-                        # If we have a saved profile, just activate it
-                        print(f"Connecting to saved network: {ssid}")
-                        up_command = ["nmcli", "con", "up", ssid]
-                        up_result = subprocess.run(
-                            up_command, capture_output=True, text=True
-                        )
-
-                        if up_result.returncode == 0:
-                            print(f"Connection activated: {up_result.stdout}")
-                            # Wait longer to make sure the network changes
-                            time.sleep(2)
-                            GLib.idle_add(
-                                lambda: print(f"Successfully connected to {ssid}")
-                            )
-                        else:
-                            print(f"Error activating connection: {up_result.stderr}")
-                            error_msg = (
-                                up_result.stderr
-                                if up_result.stderr
-                                else f"Error code: {up_result.returncode}"
-                            )
-                            GLib.idle_add(
-                                lambda: print(
-                                    f"Failed to activate connection: {error_msg}"
-                                )
-                            )
-                    else:
-                        # No saved profile and no password provided
-                        if not password:
-                            GLib.idle_add(
-                                lambda: print("Password required for secured network")
-                            )
-                            GLib.idle_add(
-                                lambda: setattr(self, "_is_connecting", False)
-                            )
-                            return
-
-                        print(f"Connecting to secured network: {ssid}")
-
-                        # New approach: First create the connection
-                        add_command = [
-                            "nmcli",
-                            "con",
-                            "add",
-                            "type",
-                            "wifi",
-                            "con-name",
-                            ssid,
-                            "ssid",
-                            ssid,
-                            "wifi-sec.key-mgmt",
-                            "wpa-psk",
-                            "wifi-sec.psk",
-                            password,
-                        ]
-
-                        # If user unchecked "Remember this network"
-                        if not remember:
-                            add_command.extend(["connection.autoconnect", "no"])
-
-                        print(f"Running command: {' '.join(add_command)}")
-
-                        try:
-                            # Create the connection profile
-                            add_result = subprocess.run(
-                                add_command, capture_output=True, text=True
-                            )
-
-                            if add_result.returncode == 0:
-                                print(
-                                    f"Connection profile created: {add_result.stdout}"
-                                )
-
-                                # Now activate the connection
-                                up_command = ["nmcli", "con", "up", ssid]
-                                up_result = subprocess.run(
-                                    up_command, capture_output=True, text=True
-                                )
-
-                                if up_result.returncode == 0:
-                                    print(f"Connection activated: {up_result.stdout}")
-                                    # Wait longer to make sure the network changes
-                                    time.sleep(2)
-                                    GLib.idle_add(
-                                        lambda: print(
-                                            f"Successfully connected to {ssid}"
-                                        )
-                                    )
-                                else:
-                                    print(
-                                        f"Error activating connection: {up_result.stderr}"
-                                    )
-                                    error_msg = (
-                                        up_result.stderr
-                                        if up_result.stderr
-                                        else f"Error code: {up_result.returncode}"
-                                    )
-                                    GLib.idle_add(
-                                        lambda: print(
-                                            f"Failed to activate connection: {error_msg}"
-                                        )
-                                    )
-                            else:
-                                print(f"Error creating connection: {add_result.stderr}")
-                                error_msg = (
-                                    add_result.stderr
-                                    if add_result.stderr
-                                    else f"Error code: {add_result.returncode}"
-                                )
-                                GLib.idle_add(
-                                    lambda: print(
-                                        f"Failed to create connection: {error_msg}"
-                                    )
-                                )
-
-                        except Exception as e:
-                            print(f"Exception connecting to network: {e}")
-                            GLib.idle_add(lambda: print(f"Error connecting: {str(e)}"))
-                else:
-                    print(f"Connecting to open network: {ssid}")
-                    try:
-                        # For open networks, create connection without security
-                        add_command = [
-                            "nmcli",
-                            "con",
-                            "add",
-                            "type",
-                            "wifi",
-                            "con-name",
-                            ssid,
-                            "ssid",
-                            ssid,
-                        ]
-
-                        # Create the connection profile for open network
-                        add_result = subprocess.run(
-                            add_command, capture_output=True, text=True
-                        )
-
-                        if add_result.returncode == 0:
-                            print(
-                                f"Open connection profile created: {add_result.stdout}"
-                            )
-
-                            # Activate the connection
-                            up_result = subprocess.run(
-                                ["nmcli", "con", "up", ssid],
-                                capture_output=True,
-                                text=True,
-                            )
-
-                            if up_result.returncode == 0:
-                                print(f"Open connection activated: {up_result.stdout}")
-                                # Wait longer to make sure the network changes
-                                time.sleep(2)
-                                GLib.idle_add(
-                                    lambda: print(f"Successfully connected to {ssid}")
-                                )
-                            else:
-                                print(
-                                    f"Error activating open connection: {up_result.stderr}"
-                                )
-                                error_msg = (
-                                    up_result.stderr
-                                    if up_result.stderr
-                                    else f"Error code: {up_result.returncode}"
-                                )
-                                GLib.idle_add(
-                                    lambda: print(
-                                        f"Failed to activate connection: {error_msg}"
-                                    )
-                                )
-                        else:
-                            print(
-                                f"Error creating open connection: {add_result.stderr}"
-                            )
-                            error_msg = (
-                                add_result.stderr
-                                if add_result.stderr
-                                else f"Error code: {add_result.returncode}"
-                            )
-                            GLib.idle_add(
-                                lambda: print(
-                                    f"Failed to create connection: {error_msg}"
-                                )
-                            )
-                    except Exception as e:
-                        print(f"Exception connecting to open network: {e}")
-                        GLib.idle_add(lambda: print(f"Error connecting: {str(e)}"))
-            finally:
-                # Always update the network list after attempting connection
-                # Wait a bit longer before refreshing to give the connection time to establish
-                time.sleep(1)
-
-                # Reset connecting flag
-                GLib.idle_add(lambda: setattr(self, "_is_connecting", False))
-
-                # Finally refresh the network list
-                GLib.idle_add(self.refresh_wifi, None)
-
-        thread = threading.Thread(target=connect_thread)
-        thread.daemon = True
-        thread.start()
-
 if __name__ == "__main__":
     win = Gtk.Window()
-    win.add(WifiMenu())
+    wm = WifiMenu()
+    wm.connect("connected", lambda _, s: print(s))
+    wm.connect("power-status-changed", lambda _, s: print(s))
+    win.add(wm)
     win.connect("destroy", Gtk.main_quit)
     win.show_all()
-    Gtk.main()
 
-# Hey there!
-#
-# > First of all, thank you for checking out this project.
-# > We truly hope that Better Control is useful to you and that it helps you in your work or personal projects.
-# > If you have any suggestions, issues, or want to collaborate, don't hesitate to reach out.
-# >   - quantumvoid0 and FelipeFMA
-#
-# Stay awesome! - reach out to us on
-# "quantumvoid._"         <-- discord
-# "quantumvoid_"          <-- reddit
-# "nekrooo_"              <-- discord
-# "BasedPenguinsEnjoyer"  <-- reddit
-#
+    Gtk.main()
