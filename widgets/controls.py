@@ -60,14 +60,14 @@ class Controls(Box):
         self.brightness = brightness_service.get_initial()
         self.volume_box = ScaleControl(
             label=Icons.VOL.value,
-            name="scale",
+            name="scale-control",
             size=size,
         )
         self.volume_box.connect("clicked", lambda *_: exec_shell_command_async("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"))
 
         self.volume_box.scale.connect("change-value", self.change_volume)
 
-        self.brightness_box = ScaleControl(label=Icons.BRIGHTNESS.value, name="scale", max_value=255, size=size)
+        self.brightness_box = ScaleControl(label=Icons.BRIGHTNESS.value, name="scale-control", max_value=255, size=size)
 
         self.brightness_box.scale.connect(
             "change-value", self.update_brightness

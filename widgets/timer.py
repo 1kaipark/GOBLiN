@@ -37,7 +37,7 @@ class TimerWidget(Gtk.Box):
         )
 
 
-        self.time_entry = Gtk.Entry(name="time-entry")
+        self.time_entry = Gtk.Entry()
         self.time_entry.connect(
             "activate",
             self.on_entry_activated,

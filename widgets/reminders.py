@@ -75,7 +75,8 @@ class Reminders(Box):
         hbox_entry.pack_start(add_button, False, False, 0)
 
         self.task_list = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.scrolled_window = Gtk.ScrolledWindow(name="reminders-scrollable")
+        self.scrolled_window = Gtk.ScrolledWindow()
+        self.scrolled_window.get_style_context().add_class("scrollable")
         self.scrolled_window.add(self.task_list)
         
         self.pack_start(self.scrolled_window, True, True, 0)

@@ -57,6 +57,7 @@ class WifiMenu(Gtk.Box):
 
         # Create scrollable content
         scroll_window = Gtk.ScrolledWindow()
+        scroll_window.get_style_context().add_class("scrollable")
         scroll_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         scroll_window.set_vexpand(True)
 

@@ -44,14 +44,14 @@ class TodoItem(Gtk.Box):
         self._category_class = category_class
 
         self.checkbox = Gtk.CheckButton(active=self._todo["completed"])
-        self.label = Gtk.Label(label=self._todo["text"], xalign=0, name="todo-label")
+        self.label = Gtk.Label(label=self._todo["text"], xalign=0)
         self.label.set_xalign(0)
         self.label.set_max_width_chars(20)
 
         category_icon = Icons.TAG.value + " " if self._todo["category"] else ""
 
         self.category_label = Gtk.Label(
-            label=category_icon + self._todo["category"], name="todo-category-label"
+            label=category_icon + self._todo["category"]
         )
         self.category_label.set_xalign(1)
         self.category_label.get_style_context().add_class(self._category_class)
@@ -59,7 +59,6 @@ class TodoItem(Gtk.Box):
         self.priority_label = Gtk.Label(
             label=f"{Icons.FLAG.value} {self._todo['priority']}",
             xalign=0,
-            name="todo-priority-label",
         )
         self.priority_label.get_style_context().add_class(self._todo["priority"])
         if self._todo["completed"]:
@@ -119,7 +118,7 @@ class Todos(Gtk.Box):
         self.add(vbox)
 
         hbox = Gtk.Box(spacing=6)
-        self.entry = Gtk.Entry(name="todo-entry")
+        self.entry = Gtk.Entry()
         self.entry.set_placeholder_text("todos")
         self.entry.connect("activate", self.add_todo)
         self.entry.connect("key-press-event", self.on_key_press)
@@ -173,7 +172,8 @@ class Todos(Gtk.Box):
         vbox.pack_start(hbox, False, False, 0)
         vbox.pack_start(self.details_revealer, True, False, 0)
 
-        self.scrolled_window = Gtk.ScrolledWindow(name="todos-scrollable")
+        self.scrolled_window = Gtk.ScrolledWindow()
+        self.scrolled_window.get_style_context().add_class("scrollable")
         self.scrolled_window.set_policy(
             Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC
         )
@@ -183,8 +183,9 @@ class Todos(Gtk.Box):
         vbox.pack_start(self.scrolled_window, True, True, 0)
 
         self.todo_list = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL, spacing=6, name="todos-list"
+            orientation=Gtk.Orientation.VERTICAL, spacing=6
         )
+#        self.todo_list.get_style_context().add_class("listbox")
         self.scrolled_window.add(self.todo_list)
 
         end_controls = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)

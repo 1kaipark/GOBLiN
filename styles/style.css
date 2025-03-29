@@ -82,14 +82,14 @@
     color: var(--red1);
 }
 
-#scale {
+#scale-control {
     background-color: mix(var(--base1), #000000, 0.2);
     padding: 2px 0;
     border-radius: 100px;
     margin: 6px 12px;
 }
 
-#scale slider {
+#scale-control slider {
     background-color: mix(var(--green2), var(--base1), 0.1);
     box-shadow: 0 0 6px 1px var(--shadow);
     border-radius: 100%;
@@ -97,17 +97,17 @@
     min-width: 18px;
 }
 
-#scale label {
+#scale-control label {
     color: var(--green2);
     font-size: 18px;
     margin: 0 12px;
 }
-#scale scale trough highlight {
+#scale-control scale trough highlight {
     all: unset;
     background-color: var(--green2);
     border-radius: 8px;
 }
-#scale scale trough {
+#scale-control scale trough {
     all: unset;
     background-color: darker(var(--base1));
     border-radius: 8px;
@@ -295,8 +295,20 @@ calendar:selected {
     background-color: darker(var(--base1));
 }
 
-#todos,
-#timer,
+#todos {
+
+    background-color: darker(var(--base1));
+    border-radius: 6px;
+    border-top-left-radius: 0;
+    padding: 12px;
+}
+#timer {
+
+    background-color: darker(var(--base1));
+    border-radius: 6px;
+    border-top-left-radius: 0;
+    padding: 12px;
+}
 #reminders {
     background-color: darker(var(--base1));
     border-radius: 6px;
@@ -316,19 +328,38 @@ slider {
     min-width: 4px;
 }
 
-#todos button:hover label,
-#reminders button:hover label,
-#bluetooth-menu button:hover label,
+#todos button:hover label { 
+    color: var(--red1);
+}
+#reminders button:hover label {
+
+    color: var(--red1);
+}
+#bluetooth-menu button:hover label {
+
+    color: var(--red1);
+}
 #wifi-menu button:hover label {
     color: var(--red1);
 }
-#todos label {
-    color: var(--fg1);
+#todos .scrollable {
+    border-radius: 6px;
+    background-color: darker(var(--base2));
+    padding: 6px;
 }
-#todos #todos-scrollable,
-#reminders #reminders-scrollable,
-#bluetooth-menu #bluetooth-scrollable,
-#wifi-menu #wifi-scrollable {
+#reminders .scrollable {
+    border-radius: 6px;
+    background-color: darker(var(--base2));
+    padding: 6px;
+}
+
+#bluetooth-menu .scrollable {
+    border-radius: 6px;
+    background-color: darker(var(--base2));
+    padding: 6px;
+}
+
+#wifi-menu .scrollable {
     border-radius: 6px;
     background-color: darker(var(--base2));
     padding: 6px;
@@ -341,7 +372,12 @@ slider {
 #todos combobox arrow {
 }
 
-#reminders entry,
+#reminders entry {
+
+    padding: 3px;
+    border-radius: 3px;
+    border: solid 1px var(--base1);
+}
 #todos entry { 
     padding: 3px;
     border-radius: 3px;
@@ -419,19 +455,32 @@ slider {
 #network-big-button:hover .arrow {
     color: var(--red1);
 }
-#bluetooth-menu,
+#bluetooth-menu {
+
+    background-color: darker(var(--base1));
+    border-radius: 6px;
+    padding: 12px;
+}
 #wifi-menu {
     background-color: darker(var(--base1));
     border-radius: 6px;
     padding: 12px;
 }
-#bluetooth-menu switch,
+#bluetooth-menu switch {
+
+    background-color: var(--base2);
+    border-radius: 12px;
+    padding: 0 2px;
+}
 #wifi-menu switch {
     background-color: var(--base2);
     border-radius: 12px;
     padding: 0 2px;
 }
-#bluetooth-menu switch slider,
+#bluetooth-menu switch slider {
+
+    background-color: var(--fg-dark1);
+}
 #wifi-menu switch slider {
     background-color: var(--fg-dark1);
 }
