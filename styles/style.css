@@ -84,13 +84,13 @@
 
 #scale-control {
     background-color: mix(var(--base1), #000000, 0.2);
-    padding: 2px 0;
-    border-radius: 100px;
+    padding: 3px 0;
+    border-radius: 20px;
     margin: 6px 12px;
 }
 
 #scale-control slider {
-    background-color: mix(var(--green2), var(--base1), 0.1);
+    background-color: mix(var(--purple1), var(--base1), 0.1);
     box-shadow: 0 0 6px 1px var(--shadow);
     border-radius: 100%;
     min-height: 18px;
@@ -98,13 +98,13 @@
 }
 
 #scale-control label {
-    color: var(--green2);
+    color: var(--purple1);
     font-size: 18px;
     margin: 0 12px;
 }
 #scale-control scale trough highlight {
     all: unset;
-    background-color: var(--green2);
+    background-color: var(--purple1);
     border-radius: 8px;
 }
 #scale-control scale trough {
@@ -116,6 +116,16 @@
     margin: 3px 6px;
 }
 
+#scale-control button:hover label {
+    color: var(--red1);
+}
+#audio-sinks-widget label {
+    font-size: 14px;
+}
+#audio-sinks-widget combobox {
+    background-color: darker(var(--base2));
+    border-radius: 6px;
+}
 
 #inner-box {
     box-shadow: 0 0 12px 1px var(--shadow);
@@ -303,7 +313,6 @@ calendar:selected {
     padding: 12px;
 }
 #timer {
-
     background-color: darker(var(--base1));
     border-radius: 6px;
     border-top-left-radius: 0;
@@ -432,7 +441,7 @@ slider {
 }
 #timer #time-label label {
     font-size: 36px;
-    color: var(--blue2);
+    color: var(--purple1);
 }
 #timer #add-time-button label {
     color: var(--fg1);

@@ -1,0 +1,26 @@
+:vars {
+    --bg1: #232634;
+    --bg2: #292c3c;
+    --fg1: #c6d0f5;
+    --fg2: #babbf1;
+    --fg-dark1: #737994;
+    --fg-dark2: #626880;
+    --base1: #303446;
+    --base2: #292c3c;
+    --blue1: #8caaee;
+    --blue2: #85c1dc;
+    --red1: #e78284;
+    --red2: #ef9f76;
+    --green1: #a6d189;
+    --green2: #e5c890;
+    --yellow1: #e5c890;
+    --yellow2: #eebebe;
+    --purple1: #ca9ee6;
+    --purple2: #e78284;
+    --shadow1: #232634;
+    --shadow2: #292c3c;
+    --glow1: #c6d0f5;
+    --glow2: #f2d5cf;
+    --shadow: mix(var(--bg1), #000000, 0.5);
+    --glow: lighter(var(--fg1));
+}

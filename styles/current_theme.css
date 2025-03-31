@@ -1,5 +1,5 @@
-@import url("./themes/everblush.css");
+@import url("./themes/catppuccin_frappe2.css");
 * {
   all: unset;
-  font-family: Cousine Nerd Font;
+  font-family: JetBrainsMono Nerd Font;
 }

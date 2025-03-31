@@ -41,6 +41,8 @@
     --green2: @sky;
     --yellow1: @yellow;
     --yellow2: @peach;
+    --purple1: @mauve;
+    --purple2: @pink;
 
     --shadow: mix(var(--bg1), #000000, 0.5);
     --glow: lighter(var(--fg1));

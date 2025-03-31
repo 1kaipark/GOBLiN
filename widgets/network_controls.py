@@ -650,6 +650,7 @@ class NetworkControlsButtonBox(Gtk.Box):
         self.icon_label.get_style_context().add_class("icon")
         
         self.text_label = Gtk.Label(label=default_text)
+        self.text_label.set_max_width_chars(15)
         self.text_label.get_style_context().add_class("text-label")
         
         self.arrow = Gtk.Label(label=Icons.DOWN.value)
