@@ -7,8 +7,9 @@ from gi.repository import Gtk, GdkPixbuf, GLib
 import os
 import time
 import psutil
+import threading 
+
 from loguru import logger
-from fabric import Fabricator
 
 from user.icons import Icons
 
@@ -36,18 +37,6 @@ def get_profile_picture_pixbuf(size=96):
     return resized_pixbuf
 
 class Profile(Gtk.Box):
-    @staticmethod
-    def psutil_uptime(f: Fabricator):
-        while True:
-            elapsed = int(time.time() - psutil.boot_time())
-            days, remainder = divmod(elapsed, 86400)
-            hours, remainder = divmod(remainder, 3600)
-            minutes, seconds = divmod(remainder, 60)
-            yield f"{days}d {hours}h {minutes}m"
-            time.sleep(60)
-
-    cool_fabricator = Fabricator(poll_from=psutil_uptime, stream=True)
-
     def __init__(self, **kwargs):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, expand=True, **kwargs)
         
@@ -72,7 +61,6 @@ class Profile(Gtk.Box):
         self.uptime.set_xalign(0)
         self.uptime.get_style_context().add_class("uptime")
 
-        self.cool_fabricator.connect("changed", self.update_status)
 
         self._labels_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, expand=True)
         self._labels_container.set_valign(Gtk.Align.CENTER)
@@ -84,8 +72,21 @@ class Profile(Gtk.Box):
         self.pack_start(self.profile_pic, False, False, 0)
         self.pack_start(self._labels_container, True, True, 6)
 
-    def update_status(self, f: Fabricator, value: str):
-        """Update uptime label dynamically."""
+        self._running = True 
+        thread = threading.Thread(target=self.psutil_uptime, daemon=True)
+        thread.start()
+
+    def psutil_uptime(self):
+        while self._running:
+            elapsed = int(time.time() - psutil.boot_time())
+            days, remainder = divmod(elapsed, 86400)
+            hours, remainder = divmod(remainder, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            self.update_uptime(value=f"{days}d {hours}h {minutes}m")
+            time.sleep(60)
+
+
+    def update_uptime(self, value: str):
         self.uptime.set_text(Icons.TIMER.value + " " + value)
 
     def update_date_label(self):
