@@ -116,6 +116,7 @@ class Todos(Gtk.Box):
         self._categories: Set[str] = set()
 
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        vbox.set_hexpand(True)
         self.add(vbox)
 
         hbox = Gtk.Box(spacing=6)

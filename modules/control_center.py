@@ -112,7 +112,7 @@ class ControlCenter(Window):
         #            orientation="h", children=[self.fetch], name="outer-box"
         #        )
 
-        self.todos = Todos(name="todos", size=(360, 120))
+        self.todos = Todos(name="todos", size=(-1, 120))
         self.todos.set_hexpand(True)
         self.timer = TimerWidget(
             name="timer",
