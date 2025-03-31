@@ -73,7 +73,6 @@ class HWMonitor(Gtk.Box):
         self.connect("destroy", self.on_destroy)
 
     def psutil_poll(self) -> dict:
-        """Polls system data in a separate thread and updates labels safely."""
         while self._running:
             ram = psutil.virtual_memory()
             disk = psutil.disk_usage("/")

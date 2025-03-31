@@ -5,6 +5,7 @@ TODO checked ones to the bottom
 
 from fabric import Application
 from fabric.widgets.wayland import WaylandWindow
+from fabric.widgets.box import Box
 
 from fabric.core.service import Signal
 import gi
@@ -355,5 +356,4 @@ if __name__ == "__main__":
             keyboard_mode="on-demand",
         ),
     )
-    app.set_stylesheet_from_file(get_relative_path("../styles/style.css"))
     app.run()
