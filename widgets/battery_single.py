@@ -21,7 +21,6 @@ class BatterySingle(Gtk.Box):
             size=size,
             name="battery",
             icon=Icons.BAT.value,
-            style="margin: 12px;"
         )
 
         self._running = True
@@ -44,7 +43,7 @@ class BatterySingle(Gtk.Box):
             time.sleep(1)
 
     def update_status(self, value: dict[str, str | bool]):
-        self.battery_progress_bar.progress_bar.value = value["percent"] / 100 
+        self.battery_progress_bar.progress_bar.set_value(value["percent"] / 100)
         self.battery_progress_bar.label.set_label(str(int(value["percent"])) + "%")
         if value["charging"]:
             self.battery_progress_bar.icon.set_text(Icons.CHARGING.value)

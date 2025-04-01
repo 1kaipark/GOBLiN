@@ -206,10 +206,14 @@ class Scratchpad(Gtk.Box):
         if self.webview is not None:
             self.preview_box.remove(self.webview)
 
+            self.webview.disconnect_by_func(self.on_decide_policy)
+            self.webview.stop_loading()
+
             self.webview.destroy() 
             self.webview = None 
 
-            gc.collect()
+            GLib.idle_add(gc.collect)
+
 
     def on_decide_policy(self, webview, decision, decision_type):
         if decision_type == WebKit2.PolicyDecisionType.NAVIGATION_ACTION:
