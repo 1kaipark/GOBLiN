@@ -306,7 +306,6 @@ calendar:selected {
 }
 
 #todos {
-
     background-color: darker(var(--base1));
     border-radius: 6px;
     border-top-left-radius: 0;
@@ -324,6 +323,12 @@ calendar:selected {
     border-top-left-radius: 0;
     padding: 12px;
 
+}
+#scratchpad {
+    background-color: darker(var(--base1));
+    border-radius: 6px;
+    border-top-left-radius: 0;
+    padding: 12px;
 }
 
 scrollbar {
@@ -362,6 +367,11 @@ slider {
     padding: 6px;
 }
 
+#scratchpad .scrollable {
+    border-radius: 6px;
+    background-color: darker(var(--base2));
+    padding: 6px;
+}
 #bluetooth-menu .scrollable {
     border-radius: 6px;
     background-color: darker(var(--base2));

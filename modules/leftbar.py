@@ -80,7 +80,7 @@ class LeftBar(Window):
         elif self.config["workspaces_wm"] == "sway":
             self.workspaces = SwayWorkspaces(orientation="v", icons=self.config["ws_icons"])
 
-        self.battery = BatterySingle(name="battery", h_align="center")
+        self.battery = BatterySingle(name="battery")
 
         self.system_tray = Box(
             name="system-tray", children=[SystemTray(pixel_size=18)], h_align="center"

@@ -1,24 +1,21 @@
-from fabric.widgets.box import Box 
-from fabric.widgets.label import Label
-
-from fabric import Fabricator
-
-from fabric.utils import get_relative_path
+import threading 
+import time 
 
 from widgets.circular_indicator import CircularIndicator
 from user.icons import Icons
 
 import gi 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib
 
 import psutil
 
-from fabric.utils import invoke_repeater
 
-class BatterySingle(Box):
+class BatterySingle(Gtk.Box):
     def __init__(self, size=24, **kwargs) -> None:
-        super().__init__(orientation="h", **kwargs)
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, **kwargs)
+
+        self.set_halign(Gtk.Align.CENTER)
 
         self.battery_progress_bar = CircularIndicator(
             size=size,
@@ -27,22 +24,30 @@ class BatterySingle(Box):
             style="margin: 12px;"
         )
 
+        self._running = True
+
+        thread = threading.Thread(target=self.psutil_poll, daemon=True)
+        thread.start()
+
         self.add(self.battery_progress_bar)
 
-        invoke_repeater(1000, self.update_status)
-
-    def update_status(self) -> bool:
-        if not (bat_sen := psutil.sensors_battery()):
-            self.battery_progress_bar.progress_bar.value = 0.42
-            self.battery_progress_bar.label.set_label("INF%")
-        else:
-            if psutil.sensors_battery().power_plugged:
-                self.battery_progress_bar.icon.set_label(Icons.CHARGING.value)
+    def psutil_poll(self):
+        while self._running:
+            value = {}
+            if bat_sen := psutil.sensors_battery():
+                value["percent"] = bat_sen.percent 
+                value["charging"] = bat_sen.power_plugged
             else:
-                self.battery_progress_bar.icon.set_label(Icons.BAT.value)
-            self.battery_progress_bar.progress_bar.value = bat_sen.percent / 100
-            self.battery_progress_bar.label.set_label(str(int(bat_sen.percent)) + "%")
+                value["percent"] = 100
+                value["charging"] = True 
+            GLib.idle_add(self.update_status, value)
+            time.sleep(1)
 
-
-        return 1
+    def update_status(self, value: dict[str, str | bool]):
+        self.battery_progress_bar.progress_bar.value = value["percent"] / 100 
+        self.battery_progress_bar.label.set_label(str(int(value["percent"])) + "%")
+        if value["charging"]:
+            self.battery_progress_bar.icon.set_text(Icons.CHARGING.value)
+        else:
+            self.battery_progress_bar.icon.set_text(Icons.BAT.value)
 

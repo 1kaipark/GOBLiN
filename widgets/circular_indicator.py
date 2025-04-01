@@ -21,7 +21,7 @@ class CircularIndicator(Box):
 
         self.icon = Label(
             label=icon,
-            style="margin: 0px 6px 0px 8px; font-size: {}px;".format(size // 3),
+#            style="margin: 0px 6px 0px 8px; font-size: {}px;".format(size // 3),
         )
 
         self.label = Label(
