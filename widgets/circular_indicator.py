@@ -128,8 +128,12 @@ class CircularIndicator(Gtk.Box):
 
         self.icon = Gtk.Label(
             label=icon,
-#            style="margin: 0px 6px 0px 8px; font-size: {}px;".format(size // 3),
         )
+        icon_css_provider = Gtk.CssProvider()
+        icon_css_provider.load_from_data(
+                f"*{{ margin: 0px 6px 0px 8px; font-size: {size // 3}px; }}".encode("utf-8")
+        )
+        self.icon.get_style_context().add_provider(icon_css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
         self.label = Gtk.Label(
             label=label,
