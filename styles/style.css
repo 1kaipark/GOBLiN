@@ -9,6 +9,11 @@
     text-shadow: 1px 1px 6px var(--shadow);
 }
 
+* button:hover label {
+    color: var(--red1);
+    text-shadow: 1px 1px 6px var(--red1);
+}
+
 #window {
     background-color: var(--bg1);
     padding: 18px 8px;
@@ -46,11 +51,11 @@
     color: var(--fg-dark1);
     margin: 0 9px;
 }
+
 #button-icon:hover label {
     color: var(--red1);
+    text-shadow: 1px 1px 6px var(--red1);
 }
-
-
 
 #network-controls button {
     background-color: var(--fg-dark1);
@@ -59,9 +64,6 @@
 #network-controls button label {
     color: var(--fg1);
     margin: 6px;
-}
-#network-controls button:hover label {
-    color: var(--red1);
 }
 #network-controls button {
     border-radius: 6px;
@@ -78,9 +80,6 @@
     margin-right: 8px;
 }
 
-#network-controls button:hover label {
-    color: var(--red1);
-}
 
 #scale-control {
     background-color: mix(var(--base1), #000000, 0.2);
@@ -116,9 +115,6 @@
     margin: 3px 6px;
 }
 
-#scale-control button:hover label {
-    color: var(--red1);
-}
 #audio-sinks-widget label {
     font-size: 14px;
 }
@@ -175,9 +171,6 @@
 #media .control-button label {
     font-size: 24px;
     color: var(--fg1);
-}
-#media .control-button:hover label {
-    color: var(--red1);
 }
 
 #weather {
@@ -324,7 +317,7 @@ calendar:selected {
     padding: 12px;
 
 }
-#scratchpad {
+#pins {
     background-color: darker(var(--base1));
     border-radius: 6px;
     border-top-left-radius: 0;
@@ -367,10 +360,18 @@ slider {
     padding: 6px;
 }
 
-#scratchpad .scrollable {
+#pins .scrollable {
     border-radius: 6px;
     background-color: darker(var(--base2));
     padding: 6px;
+}
+
+#pin-cell {
+    border-radius: 6px;
+    border: solid 1px alpha(var(--fg-dark1), 0.5);
+}
+#pins label {
+    font-size: 12px;
 }
 #bluetooth-menu .scrollable {
     border-radius: 6px;
@@ -443,9 +444,6 @@ slider {
     border-radius: 12px;
     padding: 0 12px;
 }
-#timer button:hover label {
-    color: var(--red1);
-}
 #timer button:insensitive label {
     color: lighter(var(--base1));
 }
@@ -455,9 +453,6 @@ slider {
 }
 #timer #add-time-button label {
     color: var(--fg1);
-}
-#timer #add-time-button:hover label {
-    color: var(--red1);
 }
 
 #network-big-button {
@@ -470,9 +465,6 @@ slider {
 }
 #network-big-button .icon {
     font-size: 18px;
-}
-#network-big-button:hover .arrow {
-    color: var(--red1);
 }
 #bluetooth-menu {
 
@@ -514,6 +506,10 @@ list row:selected {
 #bar #bar-icon label {
     font-size: 18px;
 }
+#bar #bar-icon:hover label {
+    color: var(--red1);
+    text-shadow: 1px 1px 6px var(--red1);
+}
 
 #bar {
     all: unset;
@@ -531,9 +527,6 @@ list row:selected {
 #bar button {
     padding: 0 12px;
     border-radius: 100%;
-}
-#bar button:hover label {
-    color: var(--red1);
 }
 #bar box {
     padding: 0;
@@ -555,9 +548,6 @@ list row:selected {
     font-size: 20px;
 }
 
-#workspaces button:hover label {
-    color: var(--red1);
-}
 
 #workspaces button.urgent label {
     color: var(--red2);
@@ -574,9 +564,6 @@ list row:selected {
 #bar .bar-clock label {
     font-size: 18px;
     color: var(--fg1);
-}
-#bar .bar-clock.hover label {
-    color: var(--red1);
 }
 
 #bar #battery #circular-bar {

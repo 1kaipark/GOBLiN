@@ -22,7 +22,7 @@ from widgets.wifi_menu import WifiMenu
 from widgets.todos import Todos
 from widgets.timer import TimerWidget
 from widgets.reminders import Reminders
-from widgets.scratchpad import Scratchpad
+from widgets.pins import Pins
 from widgets.controls import Controls
 
 from widgets.popup import NotificationPopup
@@ -122,7 +122,7 @@ class ControlCenter(Window):
         self.reminders = Reminders(name="reminders")
         self.reminders.connect("reminder-due", self.on_reminder_due)
 
-        self.scratchpad = Scratchpad(name="scratchpad")
+        self.pins = Pins(name="pins")
 
         #        self.row_3 = Box(
         #            orientation="h", children=[self.todos], name="outer-box", h_expand=True
@@ -134,7 +134,7 @@ class ControlCenter(Window):
         self.utils_notebook.append_page(
             self.reminders, Gtk.Label(Icons.REMINDERS.value)
         )
-        self.utils_notebook.append_page(self.scratchpad, Gtk.Label(Icons.SCRATCHPAD.value))
+        self.utils_notebook.append_page(self.pins, Gtk.Label(Icons.PAPERCLIP.value))
 
         self.row_3 = Box(
             children=[self.utils_notebook],

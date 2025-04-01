@@ -43,6 +43,6 @@ class Icons(Enum):
     DOWN = ""
     CLOSE = ""
     SCRATCHPAD = ""
-    
+    PAPERCLIP = ""
 
 
