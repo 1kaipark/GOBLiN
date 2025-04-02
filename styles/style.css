@@ -576,7 +576,7 @@ list row:selected {
 #bar #system-tray {
     border-radius: 6px;
     background-color: var(--bg2);
-    margin-top: 6px;
+    margin: 6px 0;
 }
 menu {
     border: solid 2px;

@@ -1,3 +1,4 @@
+from sys import exception
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GLib, Gio, GdkPixbuf, Pango
@@ -26,13 +27,13 @@ SAVE_FILE = os.path.expanduser("~/.pins.json")
 
     
 class DefaultApps(Enum):
-    terminal = "ghostty"
-    file_browser = "nemo"
-    browser = "firefox"
-    pdf = "okular"
-    image = "okular"
-    text = "nvim"
-    other = "xdg-open"
+    TERMINAL = "ghostty"
+    FILE_BROWSER = "nemo"
+    BROWSER = "firefox"
+    PDF = "okular"
+    IMAGE = "okular"
+    TEXT = "nvim"
+    OTHER = "xdg-open"
 
 URL_REGEX = re.compile(r"https?://\S+")
 
@@ -41,8 +42,13 @@ def open_file(filepath):
     try:
         subprocess.Popen(["xdg-open", filepath])
     except Exception as e:
-        logger.info("Error opening file:", e)
-        
+        logger.error("Error opening file:", e)
+
+def reveal_file(filepath):
+    try:
+        subprocess.Popen([DefaultApps.FILE_BROWSER.value, filepath])
+    except Exception as e:
+        logger.error("Error opening file:", e)
         
 def createSurfaceFromWidget(widget: Gtk.Widget) -> cairo.ImageSurface:
     alloc = widget.get_allocation()
@@ -329,6 +335,14 @@ class Cell(Gtk.EventBox):
         
     def show_context_menu(self, event):
         menu = Gtk.Menu()
+        reveal_item = Gtk.MenuItem(label="reveal in filebrowser")
+        reveal_item.connect("activate", lambda *_: reveal_file(self._content))
+
+        if self._content_type != "file":
+            reveal_item.set_sensitive(False)
+
+        menu.append(reveal_item)
+
         rename_item = Gtk.MenuItem(label="rename")
         rename_item.connect("activate", self.rename_cell)
         menu.append(rename_item)
