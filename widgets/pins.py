@@ -1,22 +1,47 @@
-""" 
-THIS IS STOLEN FROM THE GOAT @Axenide 
-[Ax-Shell](https://github.com/Axenide/Ax-Shell/blob/main/main.py)
-"""
 import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, GdkPixbuf, GLib, Gio, Pango
-import os
-import subprocess
-import json
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk, Gdk, GLib, Gio, GdkPixbuf, Pango
+
 import cairo
+
+import re
+import os
+
+from enum import Enum
+import subprocess
+
 from pathlib import Path
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
+import json
+
 from user.icons import Icons
+
+import urllib.parse
 
 SAVE_FILE = os.path.expanduser("~/.pins.json")
 
+    
+class DefaultApps(Enum):
+    terminal = "ghostty"
+    file_browser = "nemo"
+    browser = "firefox"
+    pdf = "okular"
+    image = "okular"
+    text = "nvim"
+    other = "xdg-open"
+
+URL_REGEX = re.compile(r"https?://\S+")
+
+
+def open_file(filepath):
+    try:
+        subprocess.Popen(["xdg-open", filepath])
+    except Exception as e:
+        print("Error opening file:", e)
+        
+        
 def createSurfaceFromWidget(widget: Gtk.Widget) -> cairo.ImageSurface:
     alloc = widget.get_allocation()
     surface = cairo.ImageSurface(cairo.Format.ARGB32, alloc.width, alloc.height)
@@ -27,93 +52,161 @@ def createSurfaceFromWidget(widget: Gtk.Widget) -> cairo.ImageSurface:
     widget.draw(cr)
     return surface
 
-def open_file(filepath):
-    try:
-        subprocess.Popen(["xdg-open", filepath])
-    except Exception as e:
-        print("Error opening file:", e)
-
-class FileChangeHandler(FileSystemEventHandler):
-    def __init__(self, app):
-        self.app = app
-
-    def on_any_event(self, event):
-        if event.is_directory:
-            return
-
-        for cell in self.app.cells:
-            if cell.content_type == 'file' and cell.content:
-                try:
-                    cell_real = os.path.realpath(cell.content)
-                    src_real = os.path.realpath(event.src_path)
-                    dest_real = os.path.realpath(getattr(event, 'dest_path', ''))
-                    if cell_real == src_real or (dest_real and cell_real == dest_real):
-                        GLib.idle_add(self.handle_file_event, cell, event)
-                except Exception:
-                    pass
-
-    def handle_file_event(self, cell, event):
-        if event.event_type == 'deleted':
-            cell.clear_cell()
-            self.app.save_state()
-        elif event.event_type == 'moved':
-            if hasattr(event, 'dest_path') and os.path.exists(event.dest_path):
-                cell.content = event.dest_path
-                cell.update_display()
-                self.app.save_state()
-                self.app.add_monitor_for_path(os.path.dirname(event.dest_path))
-
 class Cell(Gtk.EventBox):
-    def __init__(self, app, icon_size: int = 40, content=None, content_type=None):
-        super().__init__(name="pin-cell")
-        self.app = app
-        self.content = content
-        self.content_type = content_type
-        self._icon_size = icon_size
+    def __init__(self, parent_app: Gtk.Widget = None, icon_size: int = 40, **kwargs):
+        super().__init__(**kwargs)
+
+        self._icon_size = icon_size 
+        
+        self._content = None
+        self._content_type = None
+        
+        self._parent_app = parent_app
+
+        # Box to display information about contents
         self.box = Gtk.Box(name="pin-cell-box", orientation=Gtk.Orientation.VERTICAL)
         self.box.set_spacing(2)
         self.add(self.box)
 
-        target_dest = Gtk.TargetEntry.new("text/uri-list", 0, 0)
-        self.drag_dest_set(Gtk.DestDefaults.ALL, [target_dest], Gdk.DragAction.COPY)
-        self.connect("drag-data-received", self.on_drag_data_received)
-
         targets = [
-            Gtk.TargetEntry.new("text/uri-list", 0, 0),
-            Gtk.TargetEntry.new("text/plain", 0, 1)
+            Gtk.TargetEntry.new("text/uri-list", 0, 0),  # for files/folders
+            Gtk.TargetEntry.new(
+                "text/plain", 0, 1
+            ),  # This should handle URLs or plaintext
         ]
+
+        # handle receiving data
+        self.drag_dest_set(Gtk.DestDefaults.ALL, targets, Gdk.DragAction.COPY)
+        self.connect("drag-data-received", self.on_drag_data_received)
+        
+        # drag this widget, send data
         self.drag_source_set(Gdk.ModifierType.BUTTON1_MASK, targets, Gdk.DragAction.COPY)
         self.connect("drag-data-get", self.on_drag_data_get)
-
+        
         self.connect("button-press-event", self.on_button_press)
-
         self.connect("drag-begin", self.on_drag_begin)
+        
+        self.debuglabel = Gtk.Label(label="hi")
 
+        self.box.add(self.debuglabel)
+        
         self.update_display()
 
+    def on_drag_data_received(self, widget, drag_context, x, y, data, info, time):
+        if not (self._content is None and data.get_length() >= 0):
+            return
+        
+        uris = data.get_uris()
+        text = data.get_text()
+        
+        if uris:
+            uri = uris[0]
+            try:
+                match URL_REGEX.match(uri) is None:
+                    case True: # probably a file
+                        filepath, _ = GLib.filename_from_uri(uris[0])
+                        self._content = filepath
+                        self._content_type = "file"
+                        self.update_display()
+                        
+                    case False: # or a http uri
+                        self._content = uri 
+                        self._content_type = "url"
+                        self.update_display()
+            except Exception as e:
+                print("Error getting file from uri: {}".format(str(e)))
+                
+        else:
+            if not text:
+                return
+            if URL_REGEX.match(text):
+                self._content = text
+                self._content_type = "url"
+                self.update_display()
+                
     def update_display(self):
         for child in self.box.get_children():
             self.box.remove(child)
-        if self.content is None:
+            
+        if self._content is None: # Default init
             label = Gtk.Label(name="pin-add", label=Icons.PAPERCLIP.value)
             self.box.pack_start(label, True, True, 0)
-        else:
-            if self.content_type == 'file':
-                widget = self.get_file_preview(self.content)
+            
+        match self._content_type:
+            case "file":
+                widget = self.get_file_preview(self._content)
                 self.box.pack_start(widget, True, True, 0)
-                label = Gtk.Label(name="pin-file", label=os.path.basename(self.content))
+                label = Gtk.Label(name="pin-file", label=os.path.basename(self._content))
                 label.set_justify(Gtk.Justification.CENTER)
                 label.set_ellipsize(Pango.EllipsizeMode.END)
                 self.box.pack_start(label, False, False, 0)
-            elif self.content_type == 'text':
-                label = Gtk.Label(name="pin-text", label=self.content.split('\n')[0])
+            case "url": 
+                widget = self.get_url_preview()
+                self.box.pack_start(widget, True, True, 0)
+                website = urllib.parse.urlparse(self._content).netloc
+                label = Gtk.Label(name="pin-file", label=website)
                 label.set_justify(Gtk.Justification.CENTER)
                 label.set_ellipsize(Pango.EllipsizeMode.END)
-                label.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
-                self.box.pack_start(label, True, True, 0)
+                self.box.pack_start(label, False, False, 0)
+                
         self.box.show_all()
-        if not self.app.loading_state:
-            self.app.save_state()
+        if self._parent_app is not None:
+            if not self._parent_app.loading_state:
+                self._parent_app.save_state()
+            
+    def on_button_press(self, widget, event):
+        if self._content is None:
+            if event.button == 1:
+                self.select_file()
+            elif event.button == 2:
+                clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+                text = clipboard.wait_for_text()
+                if text:
+                    self._content = text
+                    self._content_type = 'text'
+                    self.update_display()
+        else:
+            if self._content_type == 'url' or self._content_type == 'file':
+                match event.button:
+                    case 1:
+                        if event.type == Gdk.EventType._2BUTTON_PRESS:
+                            open_file(self._content) # xdg-open also works for urls
+                    case 3:
+                        self.clear_cell()
+            elif self._content_type == 'text':
+                match event.button:
+                    case 1:
+                        clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+                        clipboard.set_text(self._content, -1)
+                    case 3:
+                        self.clear_cell()
+                    
+        return True
+        
+    def on_drag_begin(self, widget, context):
+        surface = createSurfaceFromWidget(self)
+        Gtk.drag_set_icon_surface(context, surface)
+        
+    def on_drag_data_get(self, widget, drag_context, data, info, time):
+        if self._content is None:
+            return  # nothing to drag
+        print(str(info) + " sending")
+        
+        
+        # Handle based on what the destination is asking for (info parameter)
+        if info == 0:  # URI list requested
+            if self._content_type == "file":
+                uri = GLib.filename_to_uri(self._content)
+                data.set_uris([uri])
+            elif self._content_type == "url":
+                # send link as URI, check for 'http' in on_drag_data_rec
+                data.set_uris([self._content])
+        elif info == 1: 
+            # Both files and URLs can be represented as text
+            if self._content_type == "file":
+                data.set_text(self._content, -1)
+            elif self._content_type == "url":
+                data.set_text(self._content, -1)
 
     def get_file_preview(self, filepath):
         try:
@@ -163,60 +256,22 @@ class Cell(Gtk.EventBox):
                 print("Error loading icon", icon_name)
                 return Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.DIALOG)
 
-    def on_drag_data_received(self, widget, drag_context, x, y, data, info, time):
-        if self.content is None and data.get_length() >= 0:
-            uris = data.get_uris()
-            if uris:
-                try:
-                    filepath, _ = GLib.filename_from_uri(uris[0])
-                    self.content = filepath
-                    self.content_type = 'file'
-                    self.update_display()
-                except Exception as e:
-                    print("Error getting file from URI:", e)
-        drag_context.finish(True, False, time)
+    def get_url_preview(self):
+        icon_theme = Gtk.IconTheme.get_default()
 
-    def on_drag_data_get(self, widget, drag_context, data, info, time):
-        if self.content is None:
-            return
-        if info == 0 and self.content_type == 'file':
-            uri = GLib.filename_to_uri(self.content)
-            data.set_uris([uri])
-        elif info == 1 and self.content_type == 'text':
-            data.set_text(self.content, -1)
-
-    def on_drag_begin(self, widget, context):
-        # Only show a preview when dragging files.
-        if self.content_type == 'file':
-            surface = createSurfaceFromWidget(self)
-            Gtk.drag_set_icon_surface(context, surface)
-
-    def on_button_press(self, widget, event):
-        if self.content is None:
-            if event.button == 1:
-                self.select_file()
-            elif event.button == 2:
-                clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
-                text = clipboard.wait_for_text()
-                if text:
-                    self.content = text
-                    self.content_type = 'text'
-                    self.update_display()
-        else:
-            if self.content_type == 'file':
-                if event.button == 1 and event.type == Gdk.EventType._2BUTTON_PRESS:
-                    open_file(self.content)
-                elif event.button == 3:
-                    self.clear_cell()
-            elif self.content_type == 'text':
-                if event.button == 1:
-                    clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
-                    clipboard.set_text(self.content, -1)
-                elif event.button == 3:
-                    self.clear_cell()
-        return True
-
-    def select_file(self):
+        try:
+            pixbuf = icon_theme.load_icon("internet-web-browser", self._icon_size, 0)
+            return Gtk.Image.new_from_pixbuf(pixbuf)
+        except Exception as e:
+            print("Error loading folder icon " + str(e))
+            return Gtk.Image.new_from_icon_name("default-folder", Gtk.IconSize.DIALOG)
+    
+    def clear_cell(self):
+        self._content = None
+        self._content_type = None
+        self.update_display()
+        
+    def select_file(self): 
         dialog = Gtk.FileChooserDialog(
             title="Select File",
             parent=self.get_toplevel(),
@@ -226,15 +281,42 @@ class Cell(Gtk.EventBox):
                            Gtk.STOCK_OPEN, Gtk.ResponseType.OK)
         if dialog.run() == Gtk.ResponseType.OK:
             filepath = dialog.get_filename()
-            self.content = filepath
-            self.content_type = 'file'
+            self._content = filepath
+            self._content_type = 'file'
             self.update_display()
         dialog.destroy()
 
-    def clear_cell(self):
-        self.content = None
-        self.content_type = None
-        self.update_display()
+
+class FileChangeHandler(FileSystemEventHandler):
+    def __init__(self, app):
+        self.app = app
+
+    def on_any_event(self, event):
+        if event.is_directory:
+            return
+
+        for cell in self.app.cells:
+            if cell._content_type == 'file' and cell._content:
+                try:
+                    cell_real = os.path.realpath(cell._content)
+                    src_real = os.path.realpath(event.src_path)
+                    dest_real = os.path.realpath(getattr(event, 'dest_path', ''))
+                    if cell_real == src_real or (dest_real and cell_real == dest_real):
+                        GLib.idle_add(self.handle_file_event, cell, event)
+                except Exception:
+                    pass
+
+    def handle_file_event(self, cell, event):
+        if event.event_type == 'deleted':
+            cell.clear_cell()
+            self.app.save_state()
+        elif event.event_type == 'moved':
+            if hasattr(event, 'dest_path') and os.path.exists(event.dest_path):
+                cell._content = event.dest_path
+                cell.update_display()
+                self.app.save_state()
+                self.app.add_monitor_for_path(os.path.dirname(event.dest_path))
+
 
 class Pins(Gtk.Box):
     def __init__(self, rows: int = 2, columns: int = 3, icon_size: int = 40, **kwargs):
@@ -265,7 +347,7 @@ class Pins(Gtk.Box):
         # generate grid
         for row in range(self._rows):
             for col in range(self._columns):
-                cell = Cell(self, icon_size=self._icon_size)
+                cell = Cell(self, icon_size=self._icon_size, name="pin-cell")
                 self.cells.append(cell)
                 grid.attach(cell, col, row, 1, 1)
 
@@ -278,8 +360,8 @@ class Pins(Gtk.Box):
 
     def start_file_monitoring(self):
         for cell in self.cells:
-            if cell.content_type == 'file' and cell.content:
-                dir_path = os.path.dirname(cell.content)
+            if cell._content_type == 'file' and cell._content:
+                dir_path = os.path.dirname(cell._content)
                 if os.path.exists(dir_path) and dir_path not in self.monitored_paths:
                     self.observer.schedule(self.event_handler, dir_path, recursive=False)
                     self.monitored_paths.add(dir_path)
@@ -294,11 +376,11 @@ class Pins(Gtk.Box):
         state = []
         for cell in self.cells:
             state.append({
-                'content_type': cell.content_type,
-                'content': cell.content
+                'content_type': cell._content_type,
+                'content': cell._content
             })
         try:
-            with open(SAVE_FILE, 'w') as f:
+            with open(SAVE_FILE, 'w+') as f:
                 json.dump(state, f)
         except Exception as e:
             print("Error saving state:", e)
@@ -313,8 +395,8 @@ class Pins(Gtk.Box):
                 if i < len(self.cells):
                     content = cell_data.get('content')
                     content_type = cell_data.get('content_type')
-                    self.cells[i].content = content
-                    self.cells[i].content_type = content_type
+                    self.cells[i]._content = content
+                    self.cells[i]._content_type = content_type
                     self.cells[i].update_display()
         except Exception as e:
             print("Error loading state:", e)
@@ -326,9 +408,9 @@ class Pins(Gtk.Box):
                 try:
                     filepath, _ = GLib.filename_from_uri(uri)
                     for cell in self.cells:
-                        if cell.content is None:
-                            cell.content = filepath
-                            cell.content_type = 'file'
+                        if cell._content is None:
+                            cell._content = filepath
+                            cell._content_type = 'file'
                             cell.update_display()
                             break
                 except Exception as e:
@@ -340,7 +422,10 @@ class Pins(Gtk.Box):
         self.observer.join()
         
 if __name__ == "__main__":
-    win = Gtk.Window(child=Pins())
-    win.connect("destroy", Gtk.main_quit)
+    win = Gtk.Window()
+    box = Gtk.Box()
+    box.pack_start(Pins(), *([1]*3)) 
+    win.add(box)
     win.show_all()
+    win.connect("destroy", Gtk.main_quit)
     Gtk.main()
