@@ -1,4 +1,4 @@
-@import url("./themes/gruvbox.css");
+@import url("./themes/base16/gruvbox-material-dark-hard.css");
 * {
   all: unset;
   font-family: Cousine Nerd Font;

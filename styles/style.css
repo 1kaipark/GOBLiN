@@ -1,26 +1,7 @@
-
-@define-color base00 #292828;
-@define-color base01 #32302f;
-@define-color base02 #504945;
-@define-color base03 #665c54;
-@define-color base04 #bdae93;
-@define-color base05 #ddc7a1;
-@define-color base06 #ebdbb2;
-@define-color base07 #fbf1c7;
-@define-color base08 #ea6962;
-@define-color base09 #e78a4e;
-@define-color base0A #d8a657;
-@define-color base0B #a9b665;
-@define-color base0C #89b482;
-@define-color base0D #7daea3;
-@define-color base0E #d3869b;
-@define-color base0F #bd6f3e;
-
+@import url("./current_theme.css");
 
 * {
-    all: unset;
     color: @base05;
-    font-family: "JetBrainsMono Nerd Font";
     font-size: 14px;
 }
 
@@ -146,6 +127,42 @@ button:hover label,
 #hw-mon {
     min-height: 28px;
 }
+#hw-mon #hwmon-item.green #circular-bar {
+    background-color: @base00;
+    color: darker(@base00);
+    border-color: @base0C;
+}
+#hw-mon #hwmon-item.green label {
+    color: @base0C;
+}
+
+#hw-mon #hwmon-item.blue #circular-bar {
+    background-color: @base00;
+    color: darker(@base00);
+    border-color: @base0D;
+}
+#hw-mon #hwmon-item.blue label {
+    color: @base0D;
+}
+
+#hw-mon #hwmon-item.red #circular-bar {
+    background-color: @base00;
+    color: darker(@base00);
+    border-color: @base08;
+}
+#hw-mon #hwmon-item.red label {
+    color: @base08;
+}
+
+#hw-mon #hwmon-item.yellow #circular-bar {
+    background-color: @base00;
+    color: darker(@base00);
+    border-color: @base0E;
+}
+#hw-mon #hwmon-item.yellow label {
+    color: @base0E;
+}
+
 #hw-mon #hwmon-item #circular-bar {
     background-color: @base00;
     color: darker(@base00);
@@ -257,7 +274,7 @@ switch {
     border-radius: 12px;
 }
 switch slider {
-    background-color: @base02est;
+    background-color: @base04;
     border-radius: 5px;
 }
 
@@ -270,7 +287,7 @@ switch slider {
     font-size: 18px;
 }
 #bar #bar-icon:hover label {
-    color: @base09;
+    color: @base08;
     text-shadow: 1px 1px 6px @base09;
 }
 #bar label {
@@ -294,10 +311,10 @@ switch slider {
     text-shadow: 1px 1px 6px @base09;
 }
 #bar #workspaces button.urgent label {
-    color: mix(@base08, #ff0000, 0.9);
+    color: mix(@base08, @base0E, 0.9);
 }
 #bar #workspaces button.active label {
-    color: mix(@base0F, #ff0000, 0.5);
+    color: mix(@base08, @base05, 0.5);
 }
 #bar #workspaces button.empty label {
     color: @base03;

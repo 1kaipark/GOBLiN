@@ -13,7 +13,7 @@ USER_CONFIG_FILE = USER_CONFIG_PATH + "/config.json"
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "workspaces_wm": "hyprland",
-    "theme": "gruvbox",
+    "theme": "base16/default-dark",
     "ws_icons":  ['일', '이', '삼', '사', '오', '육', '칠', '팔', '구', '십'],
     "font": "JetBrainsMono Nerd Font",
 }
@@ -43,7 +43,7 @@ def set_theme(config: dict[str, str]) -> bool:
         assert os.path.isfile(file)
         if not os.path.isfile(get_relative_path(f"../styles/themes/{config['theme']}.css")):
             logger.warning("[Main] Theme not found, resorting to default")
-            theme_css_lines.append("""@import url("./themes/gruvbox.css");""")
+            theme_css_lines.append("""@import url("./themes/base16/default-dark.css");""")
             return False
         else:
             theme_css_lines.append(f"""@import url("./themes/{config['theme']}.css");""")
