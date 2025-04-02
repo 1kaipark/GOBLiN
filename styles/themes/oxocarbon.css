@@ -1,0 +1,26 @@
+:vars {
+    --bg1: #161616;
+    --bg2: #161616;
+    --fg1: #f2f4f8;
+    --fg2: #f2f4f8;
+    --fg-dark1: #585858;
+    --fg-dark2: #42be65;
+    --base1: #393939;
+    --base2: #585858;
+    --blue1: #be95ff;
+    --blue2: #be95ff;
+    --red1: #ee5396;
+    --red2: #ee5396;
+    --green1: #42be65;
+    --green2: #42be65;
+    --yellow1: #ff7eb6;
+    --yellow2: #ff7eb6;
+    --purple1: #ee5396;
+    --purple2: #ee5396;
+    --shadow1: #000;
+    --shadow2: #161616;
+    --glow1: #f2f4f8;
+    --glow2: #f2f4f8;
+    --shadow: mix(var(--bg1), #000000, 0.5);
+    --glow: lighter(var(--fg1));
+}

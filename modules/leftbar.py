@@ -83,7 +83,7 @@ class LeftBar(Window):
         self.battery = BatterySingle(name="battery")
 
         self.system_tray = Box(
-            name="system-tray", children=[SystemTray(pixel_size=18)], h_align="center"
+            name="system-tray", children=[SystemTray(pixel_size=20)], h_align="center"
         )
 
         self.date_time = DateTime(style_classes="bar-clock", formatters=("%H\n%M"))

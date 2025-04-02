@@ -1,0 +1,377 @@
+@import 'colors';
+
+* {
+    all: unset;
+    color: $primary;
+    font-family: 'JetBrainsMono Nerd Font';
+    font-size: 14px;
+}
+
+button:hover label,
+#button-icon:hover label,
+#utils-notebook tabs tab:hover label {
+    color: mix($error, #FF0000, 0.2);
+    text-shadow: 1px 1px 6px $error;
+}
+
+#window {
+    background-color: $background;
+    padding: 18px 8px;
+    border-radius: 16px;
+}
+
+#outer-box {
+    background-color: $surface_container_low;
+    padding: 8px;
+    margin: -6px 4px;
+    border-radius: 8px;
+}
+
+#profile-pic {
+    border-radius: 4px;
+    border: solid 1px $primary;
+    margin: 2px 12px;
+}
+
+.username {
+    font-size: 20px;
+    color: $primary;
+}
+
+.date {
+    color: $secondary;
+}
+
+.uptime {
+    color: $tertiary;
+}
+
+#button-icon label {
+    background-size: 400%;
+    background-color: transparent;
+    font-size: 33px;
+    color: $primary;
+    margin: 0 9px;
+}
+
+#scale-control {
+    background-color: mix($background, #000000, 0.2);
+    padding: 3px 0;
+    border-radius: 20px;
+    margin: 6px 12px;
+    
+    slider {
+        background-color: mix($primary, $surface, 0.5);
+        box-shadow: 0 0 6px 1px $background;
+        border-radius: 100%;
+        min-height: 18px;
+        min-width: 18px;
+    }
+    
+    label {
+        color: $primary;
+        font-size: 18px;
+        margin: 0 12px;
+    }
+    
+    scale trough {
+        background-color: mix($background, #000000, 0.7);
+        border-radius: 8px;
+        margin: 3px 6px;
+        
+        highlight {
+            background-color: $primary;
+            border-radius: 8px 0 0 8px;
+        }
+    }
+}
+
+#audio-sinks-widget {
+    label {
+        font-size: 14px;
+    }
+    
+    combobox {
+        background-color: mix($background, #000000, 0.7);
+        border-radius: 6px;
+    }
+}
+
+#media {
+    scale {
+        background-color: alpha($background, 0.8);
+        padding: 3px 0;
+        border-radius: 100px;
+        margin: 3px 12px;
+        
+        trough highlight {
+            background-color: $tertiary;
+            padding: 3px 0;
+            border-radius: 100px;
+        }
+    }
+    
+    .artist {
+        color: darker($primary);
+    }
+    
+    .title {
+        color: $tertiary;
+    }
+    
+    .timestamp {
+        color: $secondary;
+        font-size: 10px;
+    }
+    
+    .control-button label {
+        font-size: 24px;
+        color: $primary;
+    }
+}
+
+#player-art {
+    background-color: darker($background);
+    border-radius: 6px;
+    border: solid 1px $tertiary;
+    margin: 8px;
+    min-width: 72px;
+    min-height: 72px;
+}
+
+#hw-mon {
+    min-height: 28px;
+    
+    #hwmon-item #circular-bar {
+        background-color: darker($background);
+        color: $surface_container_lowest;
+        border-color: $tertiary;
+    }
+    
+    #hwmon-item label {
+        color: $tertiary;
+    }
+}
+
+#utils-notebook {
+    tabs tab {
+        background-color: $surface;
+        padding: 6px 18px 6px 12px;
+        border-radius: 6px 6px 0 0;
+        
+        &:checked {
+            background-color: $surface_container_lowest;
+            
+            label {
+                color: $tertiary;
+            }
+        }
+    }
+    
+    box {
+        background-color: $surface_container_lowest;
+        border-radius: 6px;
+        border-top-left-radius: 0;
+    }
+}
+
+#todos,
+#reminders,
+#timer,
+#pins {
+    padding: 12px;
+}
+
+#timer {
+    button {
+        padding: 0 12px;
+        
+        &:insensitive label {
+            color: $surface_container;
+        }
+    }
+    
+    #time-label label {
+        font-size: 36px;
+        color: $tertiary;
+    }
+}
+
+checkbutton {
+    background-color: lighter($background);
+    border-radius: 6px;
+    min-width: 18px;
+}
+
+#utils-notebook {
+    scrolledwindow {
+        background-color: darker($background);
+    }
+}
+
+#pin-cell box {
+    border-radius: 6px;
+    border: solid 1px $surface_container_highest;
+    background-color: $surface;
+    
+    label {
+        font-size: 12px;
+    }
+}
+
+#network-big-button {
+    padding: 6px 12px;
+    border-radius: 24px;
+    background-color: $surface_container_high;
+    margin: 0 6px;
+}
+
+#bluetooth-menu,
+#wifi-menu {
+    background-color: $surface;
+    border-radius: 6px;
+    padding: 12px;
+}
+
+switch {
+    all: unset;
+    background-color: $surface_container_high;
+    border-radius: 12px;
+    
+    slider {
+        background-color: $surface_container_highest;
+        border-radius: 5px;
+    }
+}
+
+#bar {
+    background-color: $background;
+    padding: 0px 6px;
+    border-radius: 18px;
+    
+    #bar-icon {
+        label {
+            font-size: 18px;
+            
+            &:hover {
+                color: $tertiary;
+                text-shadow: 1px 1px 6px $tertiary;
+            }
+        }
+    }
+    
+    label {
+        color: $primary;
+        text-shadow: 1px 1px 6px $primary;
+    }
+    
+    box {
+        border-radius: 100%;
+        background-color: $surface;
+    }
+    
+    #workspaces {
+        border-radius: 6px;
+        background-color: $surface_container;
+        padding: 0 8px;
+        
+        button {
+            label {
+                font-size: 20px;
+                
+                &:hover {
+                    color: $tertiary;
+                    text-shadow: 1px 1px 6px $tertiary;
+                }
+            }
+            
+            &.urgent label {
+                color: mix($primary, #FF0000, 0.9);
+            }
+            
+            &.active label {
+                color: mix($tertiary, #FF0000, 0.5);
+            }
+            
+            &.empty label {
+                color: $surface_container_highest;
+            }
+        }
+    }
+    
+    .bar-clock label {
+        font-size: 18px;
+        background-color: $surface_container;
+        border-radius: 6px;
+        padding: 6px;
+    }
+    
+    #battery {
+        margin: 6px 0;
+        
+        #circular-bar {
+            background-color: darker($background);
+            color: $surface_container_lowest;
+            border-color: $primary;
+        }
+    }
+    
+    #system-tray {
+        border-radius: 6px;
+        background-color: $surface_container;
+        padding: 12px 6px;
+        
+        * {
+            all: unset;
+        }
+        
+        button {
+            margin: 3px 2px;
+        }
+    }
+}
+
+menu {
+    border: solid 2px;
+    border-radius: 10px;
+    border-color: $surface_container_high;
+    background-color: $background;
+    margin: 1px 0;
+    
+    > menuitem:hover label {
+        background-color: $error;
+        color: $surface;
+    }
+}
+
+#osd-container {
+    background-color: $background;
+    padding: 10px 5px;
+    border-radius: 24px;
+    
+    scale {
+        background-color: darker($background);
+        padding: 2px 0;
+        border-radius: 100%;
+        margin: 6px 12px;
+        
+        slider {
+            min-height: 18px;
+            min-width: 18px;
+        }
+        
+        trough {
+            background-color: darker($background);
+            
+            highlight {
+                all: unset;
+                background-color: $primary;
+                border-radius: 8px;
+            }
+        }
+    }
+    
+    label {
+        margin: 0 18px 0 12px;
+    }
+}
