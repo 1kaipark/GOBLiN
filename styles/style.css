@@ -252,6 +252,7 @@ checkbutton {
     border-radius: 6px;
     border: solid 1px @base02;
     background-color: @base00;
+    min-height: 64px;
 }
 #pins label {
     font-size: 12px;
@@ -267,6 +268,15 @@ checkbutton {
     background-color: @base00;
     border-radius: 6px;
     padding: 12px;
+}
+list row {
+	border-radius: 12px;
+}
+list row:selected {
+	background-color: @base0E;
+}
+list row:selected label {
+	color: @base01;
 }
 switch {
     all: unset;
@@ -381,6 +391,7 @@ menu > menuitem:hover label {
 }
 #osd-container scale trough {
     background-color: darker(@base00);
+    border-radius: 8px;
 }
 #osd-container scale trough highlight {
     all: unset;

@@ -387,7 +387,7 @@ class FileChangeHandler(FileSystemEventHandler):
 
 
 class Pins(Gtk.Box):
-    def __init__(self, rows: int = 2, columns: int = 4, icon_size: int = 40, **kwargs):
+    def __init__(self, rows: int = 4, columns: int = 5, icon_size: int = 30, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
 
         self._rows = rows 
