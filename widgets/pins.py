@@ -18,7 +18,9 @@ import json
 
 from user.icons import Icons
 
-import urllib.parse
+from urllib.parse import urlparse
+
+from loguru import logger
 
 SAVE_FILE = os.path.expanduser("~/.pins.json")
 
@@ -39,7 +41,7 @@ def open_file(filepath):
     try:
         subprocess.Popen(["xdg-open", filepath])
     except Exception as e:
-        print("Error opening file:", e)
+        logger.info("Error opening file:", e)
         
         
 def createSurfaceFromWidget(widget: Gtk.Widget) -> cairo.ImageSurface:
@@ -58,8 +60,10 @@ class Cell(Gtk.EventBox):
 
         self._icon_size = icon_size 
         
+        # serializable params
         self._content = None
         self._content_type = None
+        self._alias = None
         
         self._parent_app = parent_app
 
@@ -107,14 +111,16 @@ class Cell(Gtk.EventBox):
                         filepath, _ = GLib.filename_from_uri(uris[0])
                         self._content = filepath
                         self._content_type = "file"
+                        self._alias = os.path.basename(self._content)
                         self.update_display()
                         
                     case False: # or a http uri
                         self._content = uri 
                         self._content_type = "url"
+                        self._alias = urlparse(self._content).netloc
                         self.update_display()
             except Exception as e:
-                print("Error getting file from uri: {}".format(str(e)))
+                logger.info("Error getting file from uri: {}".format(str(e)))
                 
         else:
             if not text:
@@ -122,6 +128,7 @@ class Cell(Gtk.EventBox):
             if URL_REGEX.match(text):
                 self._content = text
                 self._content_type = "url"
+                self._alias = urlparse(self._content).netloc
                 self.update_display()
                 
     def update_display(self):
@@ -136,15 +143,14 @@ class Cell(Gtk.EventBox):
             case "file":
                 widget = self.get_file_preview(self._content)
                 self.box.pack_start(widget, True, True, 0)
-                label = Gtk.Label(name="pin-file", label=os.path.basename(self._content))
+                label = Gtk.Label(name="pin-file", label=self._alias)
                 label.set_justify(Gtk.Justification.CENTER)
                 label.set_ellipsize(Pango.EllipsizeMode.END)
                 self.box.pack_start(label, False, False, 0)
             case "url": 
                 widget = self.get_url_preview()
                 self.box.pack_start(widget, True, True, 0)
-                website = urllib.parse.urlparse(self._content).netloc
-                label = Gtk.Label(name="pin-file", label=website)
+                label = Gtk.Label(name="pin-file", label=self._alias)
                 label.set_justify(Gtk.Justification.CENTER)
                 label.set_ellipsize(Pango.EllipsizeMode.END)
                 self.box.pack_start(label, False, False, 0)
@@ -172,14 +178,14 @@ class Cell(Gtk.EventBox):
                         if event.type == Gdk.EventType._2BUTTON_PRESS:
                             open_file(self._content) # xdg-open also works for urls
                     case 3:
-                        self.clear_cell()
+                        self.show_context_menu(event)
             elif self._content_type == 'text':
                 match event.button:
                     case 1:
                         clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
                         clipboard.set_text(self._content, -1)
                     case 3:
-                        self.clear_cell()
+                        self.show_context_menu(event)
                     
         return True
         
@@ -190,7 +196,7 @@ class Cell(Gtk.EventBox):
     def on_drag_data_get(self, widget, drag_context, data, info, time):
         if self._content is None:
             return  # nothing to drag
-        print(str(info) + " sending")
+        logger.info(str(info) + " sending")
         
         
         # Handle based on what the destination is asking for (info parameter)
@@ -223,7 +229,7 @@ class Cell(Gtk.EventBox):
                 pixbuf = icon_theme.load_icon("folder", self._icon_size, 0)
                 return Gtk.Image.new_from_pixbuf(pixbuf)
             except Exception as e:
-                print("Error loading folder icon " + str(e))
+                logger.info("Error loading folder icon " + str(e))
                 return Gtk.Image.new_from_icon_name("default-folder", Gtk.IconSize.DIALOG)
         
         if content_type and content_type.startswith("image/"):
@@ -232,15 +238,15 @@ class Cell(Gtk.EventBox):
                     filepath, width=self._icon_size, height=self._icon_size, preserve_aspect_ratio=True)
                 return Gtk.Image.new_from_pixbuf(pixbuf)
             except Exception as e:
-                print("Error loading image preview:", e)
+                logger.info("Error loading image preview:", e)
         
         elif content_type and content_type.startswith("video/"):
             try:
                 pixbuf = icon_theme.load_icon("video-x-generic", self._icon_size, 0)
                 return Gtk.Image.new_from_pixbuf(pixbuf)
             except Exception:
-                print("Error loading video icon")
-                return Gtk.Image.new_from_icon_name("video-x-generic", Gtk.IconSize.DIALOG)
+                logger.info("Error loading video icon")
+                return Gtk.Image.new_from_icon_name("video-x-generic", Gtk.IconSize.MENU)
         else:
             icon_name = "text-x-generic"
             if content_type:
@@ -250,10 +256,10 @@ class Cell(Gtk.EventBox):
                     if names:
                         icon_name = names[0]
             try:
-                pixbuf = icon_theme.load_icon(icon_name, self._icon_size // 2, 0)
+                pixbuf = icon_theme.load_icon(icon_name, self._icon_size, 0)
                 return Gtk.Image.new_from_pixbuf(pixbuf)
             except Exception:
-                print("Error loading icon", icon_name)
+                logger.info("Error loading icon", icon_name)
                 return Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.DIALOG)
 
     def get_url_preview(self):
@@ -263,13 +269,47 @@ class Cell(Gtk.EventBox):
             pixbuf = icon_theme.load_icon("internet-web-browser", self._icon_size, 0)
             return Gtk.Image.new_from_pixbuf(pixbuf)
         except Exception as e:
-            print("Error loading folder icon " + str(e))
+            logger.info("Error loading folder icon " + str(e))
             return Gtk.Image.new_from_icon_name("default-folder", Gtk.IconSize.DIALOG)
     
-    def clear_cell(self):
+    def clear_cell(self, button=None):
         self._content = None
         self._content_type = None
         self.update_display()
+        
+    def rename_cell(self, button=None):
+        new_alias, ok_clicked = self.show_rename_prompt()
+        if new_alias == "":
+            match self._content_type:
+                case "url":
+                    new_alias = urlparse(self._content).netloc 
+                case "file":
+                    new_alias = os.path.basename(self._content)
+                    
+        if ok_clicked:
+            self._alias = new_alias
+            self.update_display()
+        
+    def show_rename_prompt(self) -> tuple[str, bool]:
+        dialog = Gtk.Dialog(title="rename", parent=self.get_toplevel(), flags=0)
+        dialog.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK)
+        
+        content_area = dialog.get_content_area()
+        label = Gtk.Label(label="enter new alias:")
+        entry = Gtk.Entry()
+        
+        entry.connect("activate", lambda e: dialog.response(Gtk.ResponseType.OK))
+        
+        content_area.pack_start(entry, True, True, 0)
+        content_area.pack_start(label, True, True, 0)
+        
+        content_area.show_all()
+        
+        response = dialog.run()
+        text = entry.get_text()
+        dialog.destroy()
+        
+        return (text, response == Gtk.ResponseType.OK)
         
     def select_file(self): 
         dialog = Gtk.FileChooserDialog(
@@ -283,8 +323,22 @@ class Cell(Gtk.EventBox):
             filepath = dialog.get_filename()
             self._content = filepath
             self._content_type = 'file'
+            self._alias = os.path.basename(self._content)
             self.update_display()
         dialog.destroy()
+        
+    def show_context_menu(self, event):
+        menu = Gtk.Menu()
+        rename_item = Gtk.MenuItem(label="rename")
+        rename_item.connect("activate", self.rename_cell)
+        menu.append(rename_item)
+        
+        delete_item = Gtk.MenuItem(label="delete")
+        delete_item.connect("activate", self.clear_cell)
+        menu.append(delete_item)
+        
+        menu.show_all()
+        menu.popup_at_pointer(event)
 
 
 class FileChangeHandler(FileSystemEventHandler):
@@ -319,7 +373,7 @@ class FileChangeHandler(FileSystemEventHandler):
 
 
 class Pins(Gtk.Box):
-    def __init__(self, rows: int = 2, columns: int = 3, icon_size: int = 40, **kwargs):
+    def __init__(self, rows: int = 2, columns: int = 4, icon_size: int = 40, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
 
         self._rows = rows 
@@ -377,13 +431,14 @@ class Pins(Gtk.Box):
         for cell in self.cells:
             state.append({
                 'content_type': cell._content_type,
-                'content': cell._content
+                'content': cell._content,
+                'alias': cell._alias,
             })
         try:
             with open(SAVE_FILE, 'w+') as f:
                 json.dump(state, f)
         except Exception as e:
-            print("Error saving state:", e)
+            logger.info("Error saving state:", e)
 
     def load_state(self):
         if not os.path.exists(SAVE_FILE):
@@ -395,11 +450,13 @@ class Pins(Gtk.Box):
                 if i < len(self.cells):
                     content = cell_data.get('content')
                     content_type = cell_data.get('content_type')
+                    alias = cell_data.get('alias')
                     self.cells[i]._content = content
                     self.cells[i]._content_type = content_type
+                    self.cells[i]._alias = alias
                     self.cells[i].update_display()
         except Exception as e:
-            print("Error loading state:", e)
+            logger.info("Error loading state:", e)
 
     def on_drag_data_received(self, widget, drag_context, x, y, data, info, time):
         if data.get_length() >= 0:
@@ -414,7 +471,7 @@ class Pins(Gtk.Box):
                             cell.update_display()
                             break
                 except Exception as e:
-                    print("Error getting file from URI:", e)
+                    logger.info("Error getting file from URI:", e)
         drag_context.finish(True, False, time)
 
     def stop_monitoring(self):
@@ -424,7 +481,7 @@ class Pins(Gtk.Box):
 if __name__ == "__main__":
     win = Gtk.Window()
     box = Gtk.Box()
-    box.pack_start(Pins(), *([1]*3)) 
+    box.pack_start(Pins(icon_size=80), *([1]*3)) 
     win.add(box)
     win.show_all()
     win.connect("destroy", Gtk.main_quit)
