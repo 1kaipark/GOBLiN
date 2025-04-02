@@ -53,30 +53,30 @@ button:hover label,
 }
 
 #scale-control {
-    background-color: mix(@base00, #000000, 0.2);
+    background-color: mix(@base00, @base05, 0.2);
     padding: 3px 0;
     border-radius: 20px;
     margin: 6px 12px;
 }
 #scale-control slider {
-    background-color: mix(@base05, @base00, 0.2);
+    background-color: mix(@base0D, @base00, 0.2);
     border-radius: 100%;
     box-shadow: 0px 1px 6px @base00;
     min-height: 18px;
     min-width: 18px;
 }
 #scale-control label {
-    color: @base05;
+    color: @base0D;
     font-size: 18px;
     margin: 0 12px;
 }
 #scale-control scale trough {
-    background-color: mix(@base00, #000000, 0.7);
+    background-color: @base00;
     border-radius: 8px;
     margin: 3px 6px;
 }
 #scale-control scale trough highlight {
-    background-color: @base05;
+    background-color: @base0D;
     border-radius: 8px 0 0 8px;
 }
 #audio-sinks-widget label {
@@ -334,6 +334,9 @@ switch slider {
 #bar #battery {
     margin: 6px 0;
 }
+#bar #battery label {
+    color: @base0C;
+}
 #bar #system-tray {
     border-radius: 6px;
     background-color: @base01;
@@ -386,8 +389,18 @@ menu > menuitem:hover label {
 }
 #osd-container label {
     margin: 0 18px 0 12px;
+    color: @base0B;
 }
 
-#bar #battery label {
-    color: @base0C;
+#popup-window {
+    background-color: @base00;
+    border-radius: 12px;
+    border: solid 1px @base05;
 }
+#popup-window box {
+    margin: 6px;
+}
+#popup-window label {
+    font-size: 18px;
+}
+

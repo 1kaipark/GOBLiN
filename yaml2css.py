@@ -23,3 +23,7 @@ if __name__ == "__main__":
 
                 with open(file.split(".")[0]+".css", "w+") as penis:
                     penis.write(css)
+
+
+
+
