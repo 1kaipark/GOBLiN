@@ -178,6 +178,37 @@ button:hover label,
 #pins {
     padding: 12px;
 }
+#todos .completed {
+    color: @base03;
+}
+#todos .P1 {
+    color: @base08;
+}
+#todos .P2 {
+    color: @base0A;
+}
+#todos .P3 {
+    color: @base0D;
+}
+#todos .P4 {
+    color: @base0C;
+}
+
+#todos .category0 {
+    color: @base09;
+}
+#todos .category1 {
+    color: @base0B;
+}
+#todos .category2 {
+    color: @base0E;
+}
+#todos .category3 {
+    color: @base0F;
+}
+#todos .category4 {
+    color: @base06;
+}
 #timer button {
     padding: 0 12px;
 }
