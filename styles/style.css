@@ -415,3 +415,7 @@ menu > menuitem:hover label {
     font-size: 18px;
 }
 
+calendar {
+    padding: 6px;
+}
+}
