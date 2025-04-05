@@ -269,6 +269,9 @@ checkbutton {
     border-radius: 6px;
     padding: 12px;
 }
+#wifi-menu box {
+	padding: 2px;
+}
 list row {
 	border-radius: 12px;
 }
@@ -417,5 +420,4 @@ menu > menuitem:hover label {
 
 calendar {
     padding: 6px;
-}
 }

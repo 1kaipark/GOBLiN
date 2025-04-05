@@ -669,6 +669,12 @@ class NetworkControlsButtonBox(Gtk.Box):
             Icons.UP.value if self.shown else Icons.DOWN.value
         )
 
+    def set_flip_state(self, state: bool):
+        self.arrow.set_text(
+            Icons.UP.value if state else Icons.DOWN.value
+        )
+
+
 
 class NetworkControls(Gtk.Box):
     def __init__(self, **kwargs):
@@ -698,7 +704,7 @@ class NetworkControls(Gtk.Box):
             "connected", self.on_wifi_connected
         )
         self.wifi_menu.connect(
-            "power-status-changed", self.on_wifi_toggled,
+            "enabled-status-changed", self.on_wifi_toggled,
         )
 
         self.bluetooth_button = Gtk.Button(name="network-big-button")
@@ -707,11 +713,12 @@ class NetworkControls(Gtk.Box):
         self.bluetooth_button.connect(
             "clicked",
             lambda *_: (
-                self.bluetooth_button_box.flip(),
                 self.wifi_revealer.set_reveal_child(False),
                 self.bluetooth_revealer.set_reveal_child(
                     not self.bluetooth_revealer.get_reveal_child()
                 ),
+                self.wifi_button_box.set_flip_state(self.wifi_revealer.get_reveal_child()),
+                self.bluetooth_button_box.set_flip_state(self.bluetooth_revealer.get_reveal_child())
             ),
         )
         self.wifi_button = Gtk.Button(name="network-big-button")
@@ -720,11 +727,12 @@ class NetworkControls(Gtk.Box):
         self.wifi_button.connect(
             "clicked",
             lambda *_: (
-                self.wifi_button_box.flip(),
                 self.bluetooth_revealer.set_reveal_child(False),
                 self.wifi_revealer.set_reveal_child(
                     not self.wifi_revealer.get_reveal_child()
                 ),
+                self.wifi_button_box.set_flip_state(self.wifi_revealer.get_reveal_child()),
+                self.bluetooth_button_box.set_flip_state(self.bluetooth_revealer.get_reveal_child())
             ),
         )
         

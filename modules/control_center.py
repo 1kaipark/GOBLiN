@@ -16,8 +16,7 @@ from widgets.media import MediaWidget
 from widgets.profile import Profile
 from widgets.power_menu import PowerMenu
 from widgets.hw_monitor import HWMonitor
-from widgets.network_controls import NetworkControls, BluetoothMenu
-from widgets.wifi_menu import WifiMenu
+from widgets.network_controls import NetworkControls
 
 from widgets.todos import Todos
 from widgets.timer import TimerWidget

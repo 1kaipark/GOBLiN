@@ -13,6 +13,9 @@ import psutil
 import time
 import threading
 
+from utils import AsyncTaskManager
+import asyncio
+
 
 
 class Indicator(Gtk.Box):
@@ -66,33 +69,41 @@ class HWMonitor(Gtk.Box):
 
         self.add(self._container)
 
-        self._running = True 
-        thread = threading.Thread(target=self.psutil_poll, daemon=True)
-        thread.start()
+        self.task_manager = AsyncTaskManager()
+        
+        self.start_poll()
+        self._running = True
 
         self.connect("destroy", self.on_destroy)
 
-    def psutil_poll(self) -> dict:
+    def start_poll(self):
+        self.task_manager.run(self._poll())
+
+    async def _poll(self) -> None:
         while self._running:
-            ram = psutil.virtual_memory()
-            disk = psutil.disk_usage("/")
-            try:
-                temp = list(psutil.sensors_temperatures().items())[0][1][0].current
-            except (IndexError, KeyError):
-                temp = 0
+            value = await asyncio.to_thread(self._poll_once)
+            GLib.idle_add(self.update_ui, value)
+            await asyncio.sleep(1)
 
-            value = {
-                "cpu_usage": int(psutil.cpu_percent()),
-                "cpu_temp": int(temp),
-                "ram_percent": ram.percent / 100,
-                "ram_usage": (ram.total - ram.available) / (1024**3),
-                "disk_percent": disk.percent / 100,
-                "disk_usage": disk.used / (1024**3),
-            }
+    def _poll_once(self) -> dict:
+        ram = psutil.virtual_memory()
+        disk = psutil.disk_usage("/")
+        try:
+            temp = list(psutil.sensors_temperatures().items())[0][1][0].current
+        except (IndexError, KeyError):
+            temp = 0
 
-            GLib.idle_add(self.update_ui, value) # update UI in main thread
+        value = {
+            "cpu_usage": int(psutil.cpu_percent()),
+            "cpu_temp": int(temp),
+            "ram_percent": ram.percent / 100,
+            "ram_usage": (ram.total - ram.available) / (1024**3),
+            "disk_percent": disk.percent / 100,
+            "disk_usage": disk.used / (1024**3),
+        }
 
-            time.sleep(1)  
+        return value
+
 
     def update_ui(self, value: dict):
         self.cpu_progress_bar.progress_bar.set_value(value["cpu_usage"] / 100)
