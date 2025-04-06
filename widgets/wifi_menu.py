@@ -22,9 +22,15 @@ from utils.wifi_backend import (
 class WifiNetworkRow(Gtk.ListBoxRow):
     def __init__(self, network_data, **kwargs):
         super().__init__(**kwargs)
+        self.set_margin_top(5)
+        self.set_margin_bottom(5)
+        self.set_margin_start(10)
+        self.set_margin_end(10)
+
         self.network_data = network_data
 
         container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        container.set_spacing(10)
 
         try:
             signal_strength = int(self.network_data["signal"])

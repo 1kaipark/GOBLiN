@@ -55,3 +55,17 @@ class AsyncTaskManager:
         self._running_tasks.add(future) # we keep a pointer to the running task for __del__ handling
         return future
 
+
+async def run_cmd_async(cmd, return_stderr: bool = False):
+    proc = await asyncio.create_subprocess_shell(
+        cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+
+    stdout, stderr = await proc.communicate()
+    if return_stderr:
+        return stdout, stderr
+    else:
+        return stdout
+

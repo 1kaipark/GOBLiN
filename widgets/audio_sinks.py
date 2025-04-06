@@ -11,12 +11,13 @@ import threading
 
 from user.icons import Icons
 
-
-def get_sinks() -> List[Dict[str, str]]:
-    """Get list of audio sinks (output devices)."""
+from utils import AsyncTaskManager, run_cmd_async
+import asyncio
+async def get_sinks() -> List[Dict[str, str]]:
     try:
-        output = subprocess.getoutput("pactl list sinks")
-        sinks = []
+        output = await run_cmd_async("pactl list sinks", return_stderr=False)
+        output = output.decode()
+        sinks = [] 
         current_sink = {}
 
         for line in output.split("\n"):
@@ -37,9 +38,11 @@ def get_sinks() -> List[Dict[str, str]]:
             sinks.append(current_sink)
 
         return sinks
+
     except Exception as e:
         logger.error(f"Failed getting sinks: {e}")
         return []
+
 
 
 def set_default_sink(sink_name: str) -> None:
@@ -82,6 +85,8 @@ class AudioSinksWidget(Gtk.Box):
 
         self.pack_start(hbox, False, False, 0)
 
+        self.task_manager = AsyncTaskManager()
+
         self.update_sinks()
 
         self.show_all()
@@ -90,48 +95,44 @@ class AudioSinksWidget(Gtk.Box):
         self.sinks_combo_box.handler_block_by_func(self.on_sink_selected)
         self.sinks_combo_box.remove_all()
 
-        thread = threading.Thread(target=self._update_sinks_thread)
-        thread.daemon = True
-        thread.start()
+        self.task_manager.run(self._update_sinks())
 
         self.sinks_combo_box.handler_unblock_by_func(self.on_sink_selected)
 
-    def _update_sinks_thread(self):
-        def append_sink(sink):
-            self.sinks_combo_box.append(id=sink["name"], text=sink["description"])
-
+    async def _update_sinks(self):
         try:
-            sinks = get_sinks()
-            current_sink = subprocess.getoutput("pactl get-default-sink").strip()
+            current_sink = await run_cmd_async("pactl get-default-sink")
+            current_sink = current_sink.decode().strip()
+
             logger.info("[AudioSinks] Current sink: {}".format(current_sink))
-            
+
+            sinks = await get_sinks()
+
             if not sinks:
                 logger.warning("[AudioSinks] No sinks found")
-                GLib.idle_add(append_sink, {"name": "none", "description": "no output devices!"})
+                GLib.idle_add(self.append_sink, {"name": "none", "description": "no output devices!"})
                 GLib.idle_add(self.sinks_combo_box.set_active, 0)
             else:
                 active_idx: int = 0
                 for i, sink in enumerate(sinks):
-                    GLib.idle_add(append_sink, sink)
+                    GLib.idle_add(self.append_sink, sink)
                     if sink["name"] == current_sink:
                         active_idx = i
+
             GLib.idle_add(self.sinks_combo_box.set_active, active_idx)
-                    
+
         except Exception as e:
             logger.error("[AudioSinks] {}".format(str(e)))
 
-    def on_sink_selected(self, combo):
-        thread = threading.Thread(
-            target=self._set_sink_thread, args=[combo.get_active_id()]
-        )
-        thread.daemon = True
-        thread.start()
+    def append_sink(self, sink):
+        self.sinks_combo_box.append(id=sink["name"], text=sink["description"])
 
-    def _set_sink_thread(self, sink_name):
-        try:
-            set_default_sink(sink_name)
-        except Exception as e:
-            print(str(e))
+    def on_sink_selected(self, combo):
+        self.task_manager.run(self._set_sink(combo.get_active_id()))
+
+    async def _set_sink(self, sink_name):
+        await asyncio.to_thread(set_default_sink, sink_name)
+
 
 
 if __name__ == "__main__":

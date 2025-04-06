@@ -9,25 +9,8 @@ from gi.repository import Gtk, GLib
 
 import psutil
 
-# https://github.com/Titaniumtown/pyfetch/blob/master/pyfetch.py
-import time
-import threading
-
 from utils import AsyncTaskManager
 import asyncio
-
-
-
-class Indicator(Gtk.Box):
-    def __init__(self, icon: str, **kwargs):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
-
-        self.icon = Gtk.Label(label=icon)
-        self.label = Gtk.Label()
-
-        self.add(self.icon)
-        self.add(self.label)
-
 
 class HWMonitor(Gtk.Box):
     def __init__(self, **kwargs) -> None:
