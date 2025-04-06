@@ -3,7 +3,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, GObject, Gdk
 
-from utils import AsyncTaskManager
+from utils import async_task_manager
 
 import asyncio
 from utils.wifi_backend import (
@@ -151,7 +151,7 @@ class WifiMenu(Gtk.Box):
         scrolled_window.set_vexpand(True)
         self.pack_start(scrolled_window, True, True, 0)
 
-        self.task_manager = AsyncTaskManager()
+        self.task_manager = async_task_manager
 
         # Store previous rx_bytes and tx_bytes to calculate Mbps
         self.prev_rx_bytes = 0

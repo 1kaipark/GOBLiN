@@ -9,7 +9,7 @@ from gi.repository import Gtk, GLib
 
 import psutil
 
-from utils import AsyncTaskManager
+from utils import async_task_manager
 import asyncio
 
 class HWMonitor(Gtk.Box):
@@ -52,7 +52,7 @@ class HWMonitor(Gtk.Box):
 
         self.add(self._container)
 
-        self.task_manager = AsyncTaskManager()
+        self.task_manager = async_task_manager
         
         self.start_poll()
         self._running = True

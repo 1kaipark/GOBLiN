@@ -11,7 +11,7 @@ import threading
 
 from user.icons import Icons
 
-from utils import AsyncTaskManager, run_cmd_async
+from utils import async_task_manager, run_cmd_async
 import asyncio
 async def get_sinks() -> List[Dict[str, str]]:
     try:
@@ -85,7 +85,7 @@ class AudioSinksWidget(Gtk.Box):
 
         self.pack_start(hbox, False, False, 0)
 
-        self.task_manager = AsyncTaskManager()
+        self.task_manager = async_task_manager
 
         self.update_sinks()
 

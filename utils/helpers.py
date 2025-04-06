@@ -68,4 +68,3 @@ async def run_cmd_async(cmd, return_stderr: bool = False):
         return stdout, stderr
     else:
         return stdout
-
