@@ -16,27 +16,57 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
 import json
+import tempfile
 
 from user.icons import Icons
 
-from urllib.parse import urlparse
+import urllib.parse 
+import urllib.request 
+
+import aiohttp
 
 from loguru import logger
 
+from utils import async_task_manager
+import asyncio
+
 SAVE_FILE = os.path.expanduser("~/.pins.json")
-
-    
-class DefaultApps(Enum):
-    TERMINAL = "ghostty"
-    FILE_BROWSER = "nemo"
-    BROWSER = "firefox"
-    PDF = "okular"
-    IMAGE = "okular"
-    TEXT = "nvim"
-    OTHER = "xdg-open"
-
 URL_REGEX = re.compile(r"https?://\S+")
 
+def is_url(text):
+    # Simple URL validation pattern
+    url_pattern = re.compile(
+        r'^(https?|ftp)://'  # http://, https://, ftp://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain
+        r'localhost|'  # localhost
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # or IP
+        r'(?::\d+)?'  # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    return bool(url_pattern.match(text))
+
+def get_favicon_url(url: str) -> str:
+    parsed_url = urllib.parse.urlparse(url)
+    base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
+    return f"{base_url}/favicon.ico"
+
+
+
+async def download_favicon(url: str) -> bytes:
+    favicon_url = get_favicon_url(url)
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(favicon_url) as response:
+                if response.status == 200:
+                    return await response.read()
+                else:
+                    print(f"Failed to download favicon: HTTP {response.status}")
+                    return None
+    except Exception as e:
+        print(f"Error downloading favicon: {e}")
+        return None
+
+        
+    
 
 def open_file(filepath):
     try:
@@ -123,7 +153,7 @@ class Cell(Gtk.EventBox):
                     case False: # or a http uri
                         self._content = uri 
                         self._content_type = "url"
-                        self._alias = urlparse(self._content).netloc
+                        self._alias = urllib.parse.urlparse(self._content).netloc
                         self.update_display()
             except Exception as e:
                 logger.info("Error getting file from uri: {}".format(str(e)))
@@ -134,7 +164,7 @@ class Cell(Gtk.EventBox):
             if URL_REGEX.match(text):
                 self._content = text
                 self._content_type = "url"
-                self._alias = urlparse(self._content).netloc
+                self._alias = urllib.parse.urlparse(self._content).netloc
                 self.update_display()
                 
     def update_display(self):
@@ -272,7 +302,14 @@ class Cell(Gtk.EventBox):
         icon_theme = Gtk.IconTheme.get_default()
 
         try:
-            pixbuf = icon_theme.load_icon("internet-web-browser", self._icon_size, 0)
+            future = async_task_manager.run(download_favicon(self._content))
+            favicon_bytes = future.result() 
+            loader = GdkPixbuf.PixbufLoader.new()
+            loader.write(favicon_bytes)
+            loader.close()
+
+            pixbuf = loader.get_pixbuf()
+
             return Gtk.Image.new_from_pixbuf(pixbuf)
         except Exception as e:
             logger.info("Error loading folder icon " + str(e))
@@ -288,7 +325,7 @@ class Cell(Gtk.EventBox):
         if new_alias == "":
             match self._content_type:
                 case "url":
-                    new_alias = urlparse(self._content).netloc 
+                    new_alias = urllib.parse.urlparse(self._content).netloc 
                 case "file":
                     new_alias = os.path.basename(self._content)
                     
