@@ -124,6 +124,10 @@ button:hover label,
     color: @base07;
 }
 
+#media .stack-switcher {
+  padding: 0 4px 0 0;
+}
+
 #hw-mon {
     min-height: 28px;
 }
@@ -242,10 +246,8 @@ checkbutton {
     min-width: 18px;
 }
 
-#utils-notebook scrolledwindow {
-    background-color: darker(@base00);
-}
 #pins scrolledwindow {
+    border-radius: 4px;
     padding: 12px;
 }
 #pin-cell box {
@@ -260,7 +262,7 @@ checkbutton {
 #network-big-button {
     padding: 6px 12px;
     border-radius: 24px;
-    background-color: @base02;
+    background-color: mix(@base00, @base05, 0.2);
     margin: 0 6px;
 }
 #bluetooth-menu,

@@ -29,6 +29,8 @@ import json
 
 from loguru import logger
 
+from gi.repository import Gtk, Gdk
+
 class LeftBar(Window):
     def __init__(
         self,
@@ -128,7 +130,37 @@ class LeftBar(Window):
             ),
         )
 
+        self.start_menu.connect('button-press-event', self.on_button_press)
+
         self.show_all()
+
+    def on_button_press(self, widget, event):
+        match event.button:
+            case 3:
+                self.show_context_menu(event)
+
+    def show_context_menu(self, event):
+        menu = Gtk.Menu()
+        
+        refresh_item = Gtk.MenuItem(label="refresh CSS")
+        refresh_item.connect("activate", self.refresh_css)
+        menu.append(refresh_item)
+        
+        menu.show_all()
+        menu.popup_at_pointer(event)
+
+    def refresh_css(self, *_): 
+        css_path = get_relative_path("../styles/style.css")
+
+        provider = Gtk.CssProvider()
+        provider.load_from_path(css_path)
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_USER
+        )
+
+
 
     def on_cc_hidden(self, *_):
         self.osd.suppressed = False

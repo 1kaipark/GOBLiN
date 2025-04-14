@@ -61,10 +61,9 @@ class MediaWidget(Gtk.Box):
         self._duration: int = 0
         
         self.art = Gtk.Image(name="player-art")
-        self.art.set_size_request(self._art_size, self._art_size)
 
         self.title_label = Label(label="not playing", style_classes="title")
-        self.artist_label = Label(label="--", style_classes="artist")
+        self.artist_label = Label(label="", style_classes="artist")
         
         self.title_scrollable = Gtk.ScrolledWindow(child=self.title_label)
         self.title_scrollable.set_size_request(-1, 18)
@@ -141,8 +140,8 @@ class MediaWidget(Gtk.Box):
         if not value:
             self._status = "Stopped"
             self.title_label.set_label("not playing")
-            self.artist_label.set_label("--")
-            self.art.set_from_pixbuf(None)
+            self.artist_label.set_label("")
+#            self.art_box.set_style(f"background-image: none;")
             for label in [self.position_label, self.duration_label]:
                 label.set_label("0:00")
             self.time_scale.set_value(0)
@@ -230,6 +229,7 @@ class MediaWidget(Gtk.Box):
             resized_pixbuf = cropped_pixbuf.scale_simple(self._art_size, self._art_size, GdkPixbuf.InterpType.BILINEAR)
             
             self.art.set_from_pixbuf(resized_pixbuf)
+#            self.art_box.set_style(f"background-image: url('file://{image_path}')")
         else:
             self.art.set_from_pixbuf(None)
             

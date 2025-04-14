@@ -17,7 +17,7 @@ from utils.wifi_backend import (
     set_wifi_power,
 )
 
-
+from loguru import logger
 
 class WifiNetworkRow(Gtk.ListBoxRow):
     def __init__(self, network_data, **kwargs):
@@ -86,7 +86,7 @@ class WifiNetworkRow(Gtk.ListBoxRow):
 
     def on_button_press_event(self, widget, event):
         if event.button == 3:  # Right-click detected
-            print("Right-click detected:", self.network_data)
+            logger.info("Right-click detected:", self.network_data)
         return False
 
 
@@ -182,7 +182,7 @@ class WifiMenu(Gtk.Box):
 
     async def _fetch_wifi_list(self):
         if hasattr(self, "_is_refreshing") and self._is_refreshing is True:
-            print("Not running it back")
+            logger.info("Not running it back")
             return
         self._is_refreshing = True
         networks = await asyncio.to_thread(get_wifi_networks)
@@ -315,7 +315,7 @@ class WifiMenu(Gtk.Box):
         else:
             # Might just need a password
             password, remember = self._show_password_dialog(selected.network_data)
-            print("hi", password, remember)
+            logger.info("hi", password, remember)
             result = await asyncio.to_thread(connect_network, ssid=ssid, password=password, remember=remember)
             if result:
                 self.update_ssid()
@@ -397,7 +397,7 @@ class WifiMenu(Gtk.Box):
         
 
     def on_destroy(self, widget):
-        print("seeyuh")
+        logger.info("seeyuh")
         del self.task_manager
 
 
@@ -406,8 +406,8 @@ class NetworksAppWin(Gtk.ApplicationWindow):
         super(NetworksAppWin, self).__init__(**kwargs)
         self.set_default_size(400, 400)
         self.networks_box = WifiMenu()
-        self.networks_box.connect("connected", lambda _, s: print(s))
-        self.networks_box.connect("enabled-status-changed", lambda _, s: print("enabled {}".format(s)))
+        self.networks_box.connect("connected", lambda _, s: logger.info(s))
+        self.networks_box.connect("enabled-status-changed", lambda _, s: logger.info("enabled {}".format(s)))
         self.add(self.networks_box)
         self.show_all()
 

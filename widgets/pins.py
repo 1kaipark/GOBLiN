@@ -59,10 +59,10 @@ async def download_favicon(url: str) -> bytes:
                 if response.status == 200:
                     return await response.read()
                 else:
-                    print(f"Failed to download favicon: HTTP {response.status}")
+                    logger.info(f"Failed to download favicon: HTTP {response.status}")
                     return None
     except Exception as e:
-        print(f"Error downloading favicon: {e}")
+        logger.info(f"Error downloading favicon: {e}")
         return None
 
         
@@ -109,10 +109,9 @@ class Cell(Gtk.EventBox):
         self.add(self.box)
 
         targets = [
+            Gtk.TargetEntry.new("UTF8_STRING", Gtk.TargetFlags.SAME_APP, 2), # Serialized payload from another cell
             Gtk.TargetEntry.new("text/uri-list", 0, 0),  # for files/folders
-            Gtk.TargetEntry.new(
-                "text/plain", 0, 1
-            ),  # This should handle URLs or plaintext
+            Gtk.TargetEntry.new("text/plain", 0, 1),  # This should handle URLs or plaintext
         ]
 
         # handle receiving data
@@ -129,12 +128,29 @@ class Cell(Gtk.EventBox):
         self.debuglabel = Gtk.Label(label="hi")
 
         self.box.add(self.debuglabel)
+
+        self.task_manager = async_task_manager
         
         self.update_display()
 
     def on_drag_data_received(self, widget, drag_context, x, y, data, info, time):
         if not (self._content is None and data.get_length() >= 0):
             return
+
+        # First, check if it's a payload from another cell 
+        if info == 2:
+            payload = data.get_text()
+            try:
+                payload_data = json.loads(payload)
+                self._content = payload_data.get('content')
+                self._content_type = payload_data.get('content_type')
+                self._alias = payload_data.get('alias')
+                self.update_display()
+            except Exception as e:
+                logger.error(f"Failed to deserialize payload because of {str(e)}")
+            drag_context.finish(True, False, time)
+            return
+
         
         uris = data.get_uris()
         text = data.get_text()
@@ -234,7 +250,6 @@ class Cell(Gtk.EventBox):
             return  # nothing to drag
         logger.info(str(info) + " sending")
         
-        
         # Handle based on what the destination is asking for (info parameter)
         if info == 0:  # URI list requested
             if self._content_type == "file":
@@ -249,6 +264,17 @@ class Cell(Gtk.EventBox):
                 data.set_text(self._content, -1)
             elif self._content_type == "url":
                 data.set_text(self._content, -1)
+
+        elif info == 2:
+            payload = json.dumps(
+                {
+                    'content': self._content,
+                    'content_type': self._content_type,
+                    'alias': self._alias,
+                }
+            )
+            data.set_text(payload, -1)
+
 
     def get_file_preview(self, filepath):
         try:
@@ -302,13 +328,13 @@ class Cell(Gtk.EventBox):
         icon_theme = Gtk.IconTheme.get_default()
 
         try:
-            future = async_task_manager.run(download_favicon(self._content))
+            future = self.task_manager.run(download_favicon(self._content))
             favicon_bytes = future.result() 
             loader = GdkPixbuf.PixbufLoader.new()
             loader.write(favicon_bytes)
             loader.close()
 
-            pixbuf = loader.get_pixbuf()
+            pixbuf = loader.get_pixbuf().scale_simple(self._icon_size, self._icon_size, GdkPixbuf.InterpType.BILINEAR)
 
             return Gtk.Image.new_from_pixbuf(pixbuf)
         except Exception as e:

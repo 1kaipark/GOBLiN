@@ -12,7 +12,7 @@ from fabric.widgets.wayland import WaylandWindow as Window
 from fabric import Application
 from fabric.utils import get_relative_path
 
-from widgets.media import MediaWidget
+from widgets.playerctl_test import MediaWidget
 from widgets.profile import Profile
 from widgets.power_menu import PowerMenu
 from widgets.hw_monitor import HWMonitor

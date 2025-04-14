@@ -122,7 +122,7 @@ class Reminders(Box):
             heapq.heappush(self.task_heap, (reminder_time, reminder_name))
             self.update_task_list()
         except (ValueError, IndexError):
-            print("Invalid time format! Use HHMM.")
+            logger.info("Invalid time format! Use HHMM.")
         self.cache_reminders()
         self.time_entry.set_text("")
         self.reminder_entry.set_text("")
@@ -195,7 +195,7 @@ class Reminders(Box):
 
 if __name__ == "__main__":
     rs = Reminders()
-    rs.connect("reminder-due", lambda _, text: print(text))
+    rs.connect("reminder-due", lambda _, text: logger.info(text))
     win = Gtk.Window()
     win.add(rs)
     win.connect("destroy", Gtk.main_quit)

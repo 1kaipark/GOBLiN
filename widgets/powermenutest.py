@@ -184,12 +184,12 @@ class HWMonitor(Gtk.Box):
         self.pack_start(self.revealer, False, False, 0)
 
         # Create radio buttons for power profiles
-        saver_button = Gtk.RadioButton.new_with_label_from_widget(None, Icons.POWERSAVE.value)
+        saver_button = Gtk.RadioButton.new_with_label_from_widget(None, "powersave")
         balanced_button = Gtk.RadioButton.new_with_label_from_widget(
-            saver_button, Icons.BALANCED.value
+            saver_button, "balanced"
         )
         performance_button = Gtk.RadioButton.new_with_label_from_widget(
-            saver_button, Icons.PERFORMANCE.value
+            saver_button, "performance"
         )
 
         profile_button_box.pack_start(saver_button, False, False, 0)

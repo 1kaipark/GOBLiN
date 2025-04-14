@@ -1,3 +1,4 @@
+
 from user.parse_config import check_or_generate_config, set_theme, USER_CONFIG_FILE, USER_CONFIG_PATH, DEFAULT_CONFIG
 
 from modules.leftbar import LeftBar
@@ -53,7 +54,6 @@ class ConfigEventHandler(FileSystemEventHandler):
 
 
 if __name__ == "__main__":
-
     # Load default config
     if check_or_generate_config():
         with open(USER_CONFIG_FILE, "rb") as h:
@@ -61,7 +61,6 @@ if __name__ == "__main__":
     else:
         config = DEFAULT_CONFIG
 
-    print(config)
     
     if set_theme(config):
         logger.info("[Main] Theme {} set".format(config["theme"]))
@@ -86,6 +85,16 @@ if __name__ == "__main__":
     css_observer.schedule(css_handler, path=get_relative_path("./styles"), recursive=False)
     css_observer.start()
 
+
+    pywal_filepath = os.path.join(os.getenv('HOME'), '.cache/wal')
+    if os.path.isfile(pywal_filepath):
+        print("PYWAL DETECTED")
+        pywal_handler = CSSFileHandler(app, pywal_filepath)
+        pywal_observer = Observer() 
+        pywal_observer.schedule(pywal_handler, path=pywal_filepath, recursive=False)
+        pywal_observer.start()
+
+
     config_path = os.path.realpath(USER_CONFIG_PATH)
 
     config_handler = ConfigEventHandler()
@@ -101,6 +110,5 @@ if __name__ == "__main__":
 
     css_observer.join()
     config_observer.join()
-
 
 
