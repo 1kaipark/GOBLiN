@@ -206,8 +206,8 @@ button:hover label,
 #kanban-note {
   	padding: 6px;
   	border-radius: 0 12px 0 12px;
-    background-color: alpha(@base02, 0.1);
-  	border: 1px solid alpha(@base02, 0.2);
+    background-color: alpha(@base03, 0.1);
+  	border: 1px solid alpha(@base03, 0.2);
 }
 #kanban-column {
   	padding: 4px;
@@ -273,8 +273,8 @@ checkbutton {
 }
 #pin-cell box {
     border-radius: 6px;
-    background-color: alpha(@base02, 0.1);
-  	border: 1px solid alpha(@base02, 0.2);
+    background-color: alpha(@base03, 0.1);
+  	border: 1px solid alpha(@base03, 0.2);
     min-height: 64px;
 }
 #pins label {
@@ -443,4 +443,12 @@ menu > menuitem:hover label {
 
 calendar {
     padding: 6px;
+}
+
+dialog,
+dialog .titlebar {
+    background-color: @base00;
+}
+dialog label {
+    margin: 4px;
 }
