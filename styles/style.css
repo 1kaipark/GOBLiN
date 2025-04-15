@@ -200,6 +200,9 @@ button:hover label,
     border-radius: 6px;
     border-top-left-radius: 0;
 }
+#kanban .image-button:hover image {
+	color: @base08;
+}	
 #kanban-note {
   	padding: 6px;
   	border-radius: 0 12px 0 12px;
