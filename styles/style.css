@@ -189,15 +189,31 @@ button:hover label,
     color: @base09;
 }
 #utils-notebook box {
-    background-color: @base00;
-    border-radius: 6px;
-    border-top-left-radius: 0;
 }
 #todos,
 #reminders,
 #timer,
-#pins {
+#pins,
+#kanban {
     padding: 12px;
+    background-color: @base00;
+    border-radius: 6px;
+    border-top-left-radius: 0;
+}
+#kanban-note {
+  	padding: 6px;
+  	border-radius: 0 12px 0 12px;
+  	border: 1px solid alpha(@base08, 0.3);
+}
+#kanban-column {
+  	padding: 4px;
+  	border-radius: 6px;
+  	border: 1px solid @base02;
+}
+#kanban textview {
+  	background-color: @base01;
+  	border-radius: 6px;
+  	border: 1px solid @base02;
 }
 #todos .completed {
     color: @base03;

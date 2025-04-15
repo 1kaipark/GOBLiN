@@ -33,6 +33,10 @@ import asyncio
 SAVE_FILE = os.path.expanduser("~/.pins.json")
 URL_REGEX = re.compile(r"https?://\S+")
 
+class DefaultApps(Enum):
+    FILE_BROWSER = "nemo"
+
+
 def is_url(text):
     # Simple URL validation pattern
     url_pattern = re.compile(

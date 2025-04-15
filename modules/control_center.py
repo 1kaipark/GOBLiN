@@ -22,6 +22,7 @@ from widgets.todos import Todos
 from widgets.timer import TimerWidget
 from widgets.reminders import Reminders
 from widgets.pins import Pins
+from widgets.kanban import Kanban
 from widgets.controls import Controls
 
 from widgets.popup import NotificationPopup
@@ -36,21 +37,6 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GObject
 
-"""
-CSS CLASSES
-* profile-pic
-* button-icon-large
-* button-icon-small-a through c
-* button-icon-smallest
-* clock-a
-* clock-b
-* clock-c
-* progress-bar-red, green, yellow, etc
-* label-red, ...
-* scale-a through c
-* label-a through c (colors)
-"""
-
 
 class ControlCenter(Window):
 
@@ -61,7 +47,7 @@ class ControlCenter(Window):
     def on_key_press(self, _, event):
         if event.keyval == 65307:  # ESC key
             focused_widget = self.get_focus()
-            if not isinstance(focused_widget, Gtk.Entry):
+            if not (isinstance(focused_widget, Gtk.Entry) or isinstance(focused_widget, Gtk.TextView)):
                 self.emit("notify_hide", False)
                 self.hide()
                 return True
@@ -112,8 +98,11 @@ class ControlCenter(Window):
         #            orientation="h", children=[self.fetch], name="outer-box"
         #        )
 
-        self.todos = Todos(name="todos", size=(-1, 120))
-        self.todos.set_hexpand(True)
+#        self.todos = Todos(name="todos", size=(-1, 120))
+#        self.todos.set_hexpand(True)
+        self.kanban = Kanban(name="kanban")
+        self.kanban.set_size_request(-1, 196)
+        self.kanban.set_hexpand(False)
         self.timer = TimerWidget(
             name="timer",
         )
@@ -128,11 +117,8 @@ class ControlCenter(Window):
         #        )
 
         self.utils_notebook = Gtk.Notebook(name="utils-notebook")
-        self.utils_notebook.append_page(self.todos, Gtk.Label(Icons.TODOS.value))
+        self.utils_notebook.append_page(self.kanban, Gtk.Label(Icons.TODOS.value))
         self.utils_notebook.append_page(self.timer, Gtk.Label(Icons.TIMER.value))
-        self.utils_notebook.append_page(
-            self.reminders, Gtk.Label(Icons.REMINDERS.value)
-        )
         self.utils_notebook.append_page(self.pins, Gtk.Label(Icons.PAPERCLIP.value))
 
         self.row_3 = Box(

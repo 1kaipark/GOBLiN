@@ -6,21 +6,15 @@ import os
 from pathlib import Path
 import cairo  # For rendering the drag preview
 
-from fabric.widgets.label import Label
-from fabric.widgets.box import Box
-from fabric.widgets.centerbox import CenterBox
-from fabric.widgets.wayland import WaylandWindow as Window
-
-from fabric import Application
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GObject, GLib
+from user.icons import Icons 
 
 def createSurfaceFromWidget(widget: Gtk.Widget) -> cairo.ImageSurface:
     alloc = widget.get_allocation()
     surface = cairo.ImageSurface(cairo.Format.ARGB32, alloc.width, alloc.height)
     cr = cairo.Context(surface)
-    # Use a transparent background.
     cr.set_source_rgba(0, 0, 0, 0)
     cr.rectangle(0, 0, alloc.width, alloc.height)
     cr.fill()
@@ -34,34 +28,36 @@ class InlineEditor(Gtk.Box):
     }
 
     def __init__(self, initial_text=""):
-        super().__init__(name="inline-editor", spacing=4)
-        # Replace Gtk.Entry with a Gtk.TextView for multiline editing.
+        super().__init__(name="inline-editor", spacing=1)
+        self.set_hexpand(False)
         self.text_view = Gtk.TextView()
         self.text_view.set_wrap_mode(Gtk.WrapMode.WORD)
+        self.text_view.set_hexpand(False)
         buffer = self.text_view.get_buffer()
         buffer.set_text(initial_text)
+
         # Connect key press events to handle Return and SHIFT+Return.
         self.text_view.connect("key-press-event", self.on_key_press)
         
-        confirm_btn = Gtk.Button(name="kanban-btn", child=Label(name="kanban-btn-label", label="accept"))
+        confirm_btn = Gtk.Button.new_from_icon_name("checkmark-symbolic", Gtk.IconSize.MENU)
         confirm_btn.connect("clicked", self.on_confirm)
         confirm_btn.get_style_context().add_class("flat")
         
-        cancel_btn = Gtk.Button(name="kanban-btn", child=Label(name="kanban-btn-neg", markup="cancel"))
+        cancel_btn = Gtk.Button.new_from_icon_name("gtk-close-symbolic", Gtk.IconSize.MENU)
         cancel_btn.connect("clicked", self.on_cancel)
         cancel_btn.get_style_context().add_class("flat")
         
-        # Pack the TextView inside a ScrolledWindow for better appearance.
         sw = Gtk.ScrolledWindow()
-        sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         sw.set_min_content_height(50)
         sw.add(self.text_view)
 
-        self.button_box = Box(children=[confirm_btn, cancel_btn], spacing=4)
-        self.center_box = CenterBox(center_children=[self.button_box], orientation="v")
+        self.button_box = Gtk.Box()
+        self.button_box.pack_start(confirm_btn, False, False, 0)
+        self.button_box.pack_start(cancel_btn, False, False, 0)
 
         self.pack_start(sw, True, True, 0)
-        self.pack_start(self.center_box, False, False, 0)
+        self.pack_start(self.button_box, False, False, 0)
         self.show_all()
 
     def on_confirm(self, widget):
@@ -95,7 +91,6 @@ class InlineEditor(Gtk.Box):
                 # Plain Return: confirm the edit.
                 self.on_confirm(widget)
                 return True
-        return False
 
 class KanbanNote(Gtk.EventBox):
     __gsignals__ = {
@@ -103,7 +98,7 @@ class KanbanNote(Gtk.EventBox):
     }
 
     def __init__(self, text):
-        super().__init__()
+        super().__init__(name="kanban-note")
         self.text = text
         # Variables to store the click offset for drag preview.
         self.setup_ui()
@@ -111,19 +106,18 @@ class KanbanNote(Gtk.EventBox):
         self.connect("button-press-event", self.on_button_press)
 
     def setup_ui(self):
-        self.box = Gtk.Box(name="kanban-note", spacing=4)
+        self.box = Gtk.Box(name="kanban-note", spacing=2)
         self.label = Gtk.Label(label=self.text)
         self.label.set_line_wrap(True)
         # Wrap long lines.
         self.label.set_line_wrap_mode(Gtk.WrapMode.WORD)
+        self.label.set_xalign(0)
         
-        self.delete_btn = Gtk.Button(name="kanban-btn", child=Label(name="kanban-btn-neg", label="del"))
+        self.delete_btn = Gtk.Button.new_from_icon_name("gtk-close-symbolic", Gtk.IconSize.MENU)
         self.delete_btn.connect("clicked", self.on_delete_clicked)
-
-        self.center_btn = CenterBox(orientation="v", start_children=[self.delete_btn])
         
         self.box.pack_start(self.label, True, True, 0)
-        self.box.pack_start(self.center_btn, False, False, 0)
+        self.box.pack_start(self.delete_btn, False, False, 0)
         self.add(self.box)
         self.show_all()
 
@@ -135,14 +129,12 @@ class KanbanNote(Gtk.EventBox):
         )
         self.connect("drag-data-get", self.on_drag_data_get)
         self.connect("drag-data-delete", self.on_drag_data_delete)
-        # Set up drag-begin to display a preview of the card.
         self.connect("drag-begin", self.on_drag_begin)
 
     def on_button_press(self, widget, event):
-        # If it's a double-click, start editing.
-        if event.type == Gdk.EventType._2BUTTON_PRESS:
-            self.start_edit()
+        if event.type != Gdk.EventType._2BUTTON_PRESS:
             return True
+        self.start_edit()
         return False
 
     def on_drag_begin(self, widget, context):
@@ -180,9 +172,8 @@ class KanbanNote(Gtk.EventBox):
         
         row.remove(self)
         row.add(editor)
+        editor.text_view.grab_focus()
         row.show_all()
-        # Usamos un retardo de 50 milisegundos:
-        GLib.timeout_add(50, lambda: (editor.text_view.grab_focus(), False))
 
 class KanbanColumn(Gtk.Frame):
     __gsignals__ = {
@@ -202,8 +193,10 @@ class KanbanColumn(Gtk.Frame):
         self.listbox = Gtk.ListBox()
         self.listbox.set_selection_mode(Gtk.SelectionMode.NONE)
         
-        self.add_btn = Gtk.Button(name="kanban-btn-add", child=Label(name="kanban-btn-label", label="add"))
-        header = CenterBox(name="kanban-header", center_children=[Label(name="column-header", label=self.title)], end_children=[self.add_btn])
+        self.add_btn = Gtk.Button.new_from_icon_name("gtk-add-symbolic", Gtk.IconSize.MENU)
+        header = Gtk.Box()
+        header.pack_start(Gtk.Label(label=self.title), False, False, 0)
+        header.pack_end(self.add_btn, False, False, 0)
         self.box.pack_start(header, False, False, 0)
         
         self.add_btn.connect("clicked", self.on_add_clicked)
@@ -304,17 +297,17 @@ class KanbanColumn(Gtk.Frame):
 class Kanban(Gtk.Box):
     STATE_FILE = Path(os.path.expanduser("~/.kanban.json"))
 
-    def __init__(self):
-        super().__init__(name="kanban")
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         
         self.grid = Gtk.Grid(column_spacing=4, column_homogeneous=True)
         self.grid.set_vexpand(True)
         self.add(self.grid)
         
         self.columns = [
-            KanbanColumn("To Do"),
-            KanbanColumn("In Progress"),
-            KanbanColumn("Done")
+            KanbanColumn("todo"),
+            KanbanColumn("doing"),
+            KanbanColumn("done")
         ]
         
         for i, column in enumerate(self.columns):
@@ -356,8 +349,9 @@ class Kanban(Gtk.Box):
 
 if __name__ == "__main__":
     k = Kanban()
-    k.set_size_request(800, 800)
-    win = Window(keyboard_mode="on-demand")
+    win = Gtk.Window()
     win.add(k)
-    app = Application("kanban", win)
-    app.run()
+    win.connect("destroy", Gtk.main_quit)
+
+    win.show_all()
+    Gtk.main()
