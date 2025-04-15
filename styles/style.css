@@ -206,12 +206,14 @@ button:hover label,
 #kanban-note {
   	padding: 6px;
   	border-radius: 0 12px 0 12px;
-  	border: 1px solid alpha(@base08, 0.3);
+    background-color: alpha(@base02, 0.1);
+  	border: 1px solid alpha(@base02, 0.2);
 }
 #kanban-column {
   	padding: 4px;
-  	border-radius: 6px;
-  	border: 1px solid @base02;
+  	border-radius: 2px;
+    background-color: @base01;
+  	border: 2px solid alpha(@base05, 0.2);
 }
 #kanban textview {
   	background-color: @base01;
@@ -271,8 +273,8 @@ checkbutton {
 }
 #pin-cell box {
     border-radius: 6px;
-    border: solid 1px @base02;
-    background-color: @base00;
+    background-color: alpha(@base02, 0.1);
+  	border: 1px solid alpha(@base02, 0.2);
     min-height: 64px;
 }
 #pins label {

@@ -347,7 +347,64 @@ class Kanban(Gtk.Box):
             print(f"Error loading state: {e}")
 
 
+KANBAN_CSS = """
+/*
+You can type here any CSS rule recognized by GTK+.
+You can temporarily disable this custom CSS by clicking on the “Pause” button above.
+
+Changes are applied instantly and globally, for the whole application.
+*/
+
+* {
+  all: unset;
+  font-family: Arial;
+}
+window {
+    background-color: @base00;
+    padding: 18px 8px;
+    border-radius: 16px;
+}
+
+#outer-box {
+    background-color: @base01;
+    padding: 8px;
+    margin: -6px 4px;
+    border-radius: 8px;
+}
+
+
+#kanban {
+    padding: 12px;
+    background-color: @base00;
+    border-radius: 6px;
+    border-top-left-radius: 0;
+}
+#kanban .image-button:hover image {
+	color: @base08;
+}	
+#kanban-note {
+  	padding: 6px;
+  	border-radius: 0 12px 0 12px;
+  	border: 1px solid alpha(@base08, 0.3);
+}
+#kanban-column {
+  	padding: 4px;
+  	border-radius: 6px;
+  	border: 1px solid @base02;
+}
+#kanban textview {
+  	background-color: @base01;
+  	border-radius: 6px;
+  	border: 1px solid @base02;
+}
+
+"""
+
+
 if __name__ == "__main__":
+    provider = Gtk.CssProvider()
+    provider.load_from_data(KANBAN_CSS)
+    Gtk.StyleContext().add_provider_for_screen(Gdk.Screen.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
     k = Kanban()
     win = Gtk.Window()
     win.add(k)
