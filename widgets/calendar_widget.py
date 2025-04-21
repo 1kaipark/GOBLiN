@@ -34,7 +34,7 @@ class CalendarWindow(Window):
 
         self._container.add(CalendarWidget())
         self._container.add(Weather())
-        self._container.add(QuoteDisplay())
+        self._container.add(QuoteDisplay(name="quote-display"))
         self.add(self._container)
         self.show_all()
 

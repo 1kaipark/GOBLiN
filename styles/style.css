@@ -323,7 +323,7 @@ switch slider {
     font-size: 18px;
 }
 #bar #bar-icon:hover label {
-    color: @base08;
+    color: mix(@base08, #ff0000, 0.2);
     text-shadow: 1px 1px 6px @base09;
 }
 #bar label {
@@ -343,7 +343,7 @@ switch slider {
     font-size: 20px;
 }
 #bar #workspaces button:hover label {
-    color: @base09;
+    color: mix(@base08, #ff0000, 0.2);
     text-shadow: 1px 1px 6px @base09;
 }
 #bar #workspaces button.urgent label {
@@ -451,4 +451,7 @@ dialog .titlebar {
 }
 dialog label {
     margin: 4px;
+}
+#quote-display {
+    padding: 12px 6px;
 }
