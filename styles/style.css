@@ -306,7 +306,7 @@ list row:selected label {
 }
 switch {
     all: unset;
-    background-color: @base02;
+    background-color: @base01;
     border-radius: 12px;
 }
 switch slider {
