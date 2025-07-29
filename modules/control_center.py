@@ -12,7 +12,7 @@ from fabric.widgets.wayland import WaylandWindow as Window
 from fabric import Application
 from fabric.utils import get_relative_path
 
-from widgets.playerctl_test import MediaWidget
+from widgets.media_widget import MediaWidget
 from widgets.profile import Profile
 from widgets.power_menu import PowerMenu
 from widgets.hw_monitor import HWMonitor
@@ -58,7 +58,6 @@ class ControlCenter(Window):
             layer="overlay",
             title="control-center",
             anchor="top left",
-            margin="10px 10px 10px 10px",
             exclusivity="none",
             visible=False,
             all_visible=False,

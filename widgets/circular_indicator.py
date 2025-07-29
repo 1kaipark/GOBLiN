@@ -119,7 +119,7 @@ class CircularIndicator(Gtk.Box):
         style_classes: str = "",
         **kwargs,
     ) -> None:
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
+        super().__init__(**kwargs)
         self.get_style_context().add_class(style_classes)
         self.progress_bar = CircularProgressBar(
             name="circular-bar",
@@ -141,8 +141,14 @@ class CircularIndicator(Gtk.Box):
 
         overlay = Gtk.Overlay(child=self.progress_bar)
         overlay.add_overlay(self.icon)
-        self.add(overlay)
-        self.add(self.label)
+
+        match self.get_orientation():
+            case Gtk.Orientation.VERTICAL:
+                self.add(overlay)
+                self.add(self.label)
+            case _:
+                self.add(self.label)
+                self.add(overlay)
 
 
 # Example usage

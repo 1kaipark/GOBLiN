@@ -11,18 +11,23 @@ button:hover label,
     color: mix(@base08, #ff0000, 0.2);
     text-shadow: 1px 1px 6px @base08;
 }
-
 #window {
-    background-color: @base00;
+    background-color: alpha(@base00, 0.9);
+    /* border: 1px solid rgba( 255, 255, 255, 0.18 ); */
     padding: 18px 8px;
     border-radius: 16px;
+    /* box-shadow: 0 8px 3px rgba(31, 38, 135, 0.2),  */
+    /*             inset 0 4px 6px rgba(255, 255, 255, 0.1); */
+    margin: 5px;
 }
 
 #outer-box {
-    background-color: @base01;
+    /* box-shadow: 0 8px 4px alpha(@base01, 0.3),  */
+    /*             inset 0 4px 12px alpha(@base05, 0.2); */
+    border-radius: 8px;
+    background-color: alpha(@base01, 0.75);
     padding: 8px;
     margin: -6px 4px;
-    border-radius: 8px;
 }
 
 #profile-pic {
@@ -52,12 +57,15 @@ button:hover label,
     margin: 0 9px;
 }
 
-#scale-control {
-    background-color: mix(@base00, @base05, 0.2);
+#scale-control,
+#network-big-button {
+    border: 1px solid rgba( 255, 255, 255, 0.18 );
+    box-shadow: 0 8px 8px 0 @base01;
     padding: 3px 0;
     border-radius: 20px;
     margin: 6px 12px;
 }
+
 #scale-control slider {
     background-color: mix(@base0D, @base00, 0.2);
     border-radius: 100%;
@@ -89,7 +97,7 @@ button:hover label,
 
 #media scale {
     background-color: alpha(@base00, 0.8);
-    padding: 3px 0;
+    padding: 0 2px;
     border-radius: 100px;
     margin: 3px 12px;
 }
@@ -152,19 +160,19 @@ button:hover label,
 #hw-mon #hwmon-item.red #circular-bar {
     background-color: @base00;
     color: darker(@base00);
-    border-color: @base08;
+    border-color: @base0E;
 }
 #hw-mon #hwmon-item.red label {
-    color: @base08;
+    color: @base0E;
 }
 
 #hw-mon #hwmon-item.yellow #circular-bar {
     background-color: @base00;
     color: darker(@base00);
-    border-color: @base0E;
+    border-color: @base0D;
 }
 #hw-mon #hwmon-item.yellow label {
-    color: @base0E;
+    color: @base0D;
 }
 
 #hw-mon #hwmon-item #circular-bar {
@@ -177,13 +185,16 @@ button:hover label,
 }
 
 #utils-notebook tabs tab {
-    background-color: @base01;
     padding: 6px 18px 6px 12px;
     border-radius: 6px 6px 0 0;
+    border: 1px solid rgba( 255, 255, 255, 0.18 );
+    box-shadow: 0 8px 8px 0 @base01;
 }
 
 #utils-notebook tabs tab:checked {
-    background-color: @base00;
+    background-color: alpha(@base00, 0.5);
+    border: 1px solid rgba( 255, 255, 255, 0.18 );
+    box-shadow: 0 8px 8px 0 @base01;
 }
 #utils-notebook tabs tab:checked label {
     color: @base09;
@@ -195,8 +206,10 @@ button:hover label,
 #timer,
 #pins,
 #kanban {
+    background-color: alpha(@base00, 0.5);
+    border: 1px solid rgba( 255, 255, 255, 0.18 );
     padding: 12px;
-    background-color: @base00;
+    box-shadow: 0 8px 8px 0 @base01;
     border-radius: 6px;
     border-top-left-radius: 0;
 }
@@ -205,15 +218,14 @@ button:hover label,
 }	
 #kanban-note {
   	padding: 6px;
+    box-shadow: 0 8px 8px 0 @base01;
   	border-radius: 0 12px 0 12px;
-    background-color: alpha(@base02, 0.1);
   	border: 1px solid alpha(@base02, 0.2);
 }
 #kanban-column {
   	padding: 4px;
   	border-radius: 2px;
-    background-color: @base01;
-  	border: 2px solid alpha(@base05, 0.2);
+    border: 1px solid rgba( 255, 255, 255, 0.18 );
 }
 #kanban textview {
   	background-color: @base01;
@@ -282,18 +294,13 @@ checkbutton {
 }
 #network-big-button {
     padding: 6px 12px;
-    border-radius: 24px;
-    background-color: mix(@base00, @base05, 0.2);
     margin: 0 6px;
 }
 #bluetooth-menu,
 #wifi-menu {
-    background-color: @base00;
     border-radius: 6px;
     padding: 12px;
-}
-#wifi-menu box {
-	padding: 2px;
+    border: 1px solid rgba( 255, 255, 255, 0.18 );
 }
 list row {
 	border-radius: 12px;
@@ -315,51 +322,46 @@ switch slider {
 }
 
 #bar {
-    background-color: @base00;
-    padding: 0px 6px;
-    border-radius: 18px;
+    all: unset;
+    padding: 0 2px;
+    border-radius: 0 16px 16px 0;
+    margin: 5px 0px 5px 0px;
+    background-color: alpha(@base00, 0.9);
 }
 #bar #bar-icon label {
+    margin: 5px 5px 5px 0;
     font-size: 18px;
 }
 #bar #bar-icon:hover label {
-    color: mix(@base08, #ff0000, 0.2);
+    color: mix(red, @base02, 0.8);
     text-shadow: 1px 1px 6px @base09;
 }
 #bar label {
     color: @base05;
-    text-shadow: 1px 1px 6px @base0B;
-}
-#bar box {
-    border-radius: 100%;
-    background-color: @base00;
+    /* text-shadow: 1px 1px 6px @base0B; */
 }
 #bar #workspaces {
     border-radius: 6px;
-    background-color: @base01;
-    padding: 0 8px;
+    padding: 8px;
 }
 #bar #workspaces button label {
     font-size: 20px;
 }
 #bar #workspaces button:hover label {
-    color: mix(@base08, #ff0000, 0.2);
-    text-shadow: 1px 1px 6px @base09;
+    color: mix(red, @base02, 0.8);
+    box-shadow: 0 8px 8px 0 @base01;
 }
-#bar #workspaces button.urgent label {
-    color: mix(@base08, @base0E, 0.9);
-}
+/* #bar #workspaces button.urgent label { */
+/*     color: mix(@base01, base03, 0.1); */
+/* } */
 #bar #workspaces button.active label {
-    color: mix(@base08, @base05, 0.5);
+    color: mix(red, @base02, 0.8);
 }
 #bar #workspaces button.empty label {
     color: @base03;
 }
 #bar .bar-clock label {
     font-size: 18px;
-    background-color: @base01;
-    border-radius: 6px;
-    padding: 6px;
 }
 
 #bar #battery #circular-bar {
@@ -368,21 +370,13 @@ switch slider {
     border-color: @base0C;
 }
 #bar #battery {
-    margin: 6px 0;
+    margin: 0 2px;
 }
 #bar #battery label {
     color: @base0C;
 }
 #bar #system-tray {
-    border-radius: 6px;
-    background-color: @base01;
-    padding: 12px 6px;
-}
-#bar #system-tray * {
-    all: unset;
-}
-#bar #system-tray button {
-    margin: 3px 2px;
+    padding: 6px 0;
 }
 menu {
     border: solid 2px;

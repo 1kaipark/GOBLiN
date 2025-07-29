@@ -1,4 +1,3 @@
-
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -20,6 +19,29 @@ from user.icons import Icons
 # TODO context menu for right click connect, dc, forget
 
 class BluetoothDeviceRow(Gtk.ListBoxRow):
+    DEVICE_ICONS = {
+        "audio-headset": "audio-headset-symbolic",
+        "audio-headphones": "audio-headphones-symbolic",
+        "audio-card": "audio-speakers-symbolic",
+        "input-keyboard": "input-keyboard-symbolic",
+        "input-mouse": "input-mouse-symbolic",
+        "input-gaming": "input-gaming-symbolic",
+        "phone": "phone-symbolic",
+        "default": "bluetooth-symbolic",
+    }
+
+    DEVICE_TYPE_NAMES = {
+        "audio-headset": "Headset",
+        "audio-headphones": "Headphones",
+        "audio-card": "Speaker",
+        "input-keyboard": "Keyboard",
+        "input-mouse": "Mouse",
+        "input-gaming": "Game Controller",
+        "phone": "Phone",
+        "unknown": "Device",
+        "default": "Bluetooth Device",
+    }
+
     def __init__(self, device_info: dict[str, str | bool]):
         super().__init__()
 
@@ -97,43 +119,13 @@ class BluetoothDeviceRow(Gtk.ListBoxRow):
             GLib.idle_add(self.connected_label.set_text, " (Connected)")
         GLib.idle_add(self.type_label.set_text, self.get_friendly_device_type())
 
-        
-
-
-
     def get_icon_name_for_device(self):
         """Return appropriate icon based on device type"""
-        if (
-            self.device_type == "audio-headset"
-            or self.device_type == "audio-headphones"
-        ):
-            return "audio-headset-symbolic"
-        elif self.device_type == "audio-card":
-            return "audio-speakers-symbolic"
-        elif self.device_type == "input-keyboard":
-            return "input-keyboard-symbolic"
-        elif self.device_type == "input-mouse":
-            return "input-mouse-symbolic"
-        elif self.device_type == "input-gaming":
-            return "input-gaming-symbolic"
-        elif self.device_type == "phone":
-            return "phone-symbolic"
-        else:
-            return "bluetooth-symbolic"
+        return self.DEVICE_ICONS.get(self.device_type, self.DEVICE_ICONS["default"])
 
     def get_friendly_device_type(self):
         """Return user-friendly device type name"""
-        type_names = {
-            "audio-headset": "Headset",
-            "audio-headphones": "Headphones",
-            "audio-card": "Speaker",
-            "input-keyboard": "Keyboard",
-            "input-mouse": "Mouse",
-            "input-gaming": "Game Controller",
-            "phone": "Phone",
-            "unknown": "Device",
-        }
-        return type_names.get(self.device_type, "Bluetooth Device")
+        return self.DEVICE_TYPE_NAMES.get(self.device_type, self.DEVICE_TYPE_NAMES["default"])
 
     def get_mac_address(self):
         return self.mac_address
@@ -160,6 +152,21 @@ class BluetoothMenu(Gtk.Box):
 
         self.task_manager = async_task_manager
         
+        self._container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self._container.set_hexpand(True)
+        self._container.set_vexpand(True)
+
+        self._setup_header_ui()
+        self._setup_scan_ui()
+        self._setup_devices_list_ui()
+
+        self.add(self._container)
+
+        self.update_switch()
+        self.refresh_bluetooth(None)
+
+    def _setup_header_ui(self):
+        """Sets up the header UI elements (title and switch)."""
         self.status_switch = Gtk.Switch()
         self.status_switch.set_valign(Gtk.Align.CENTER)
         self.status_switch.connect("notify::active", self.on_switch_toggled)
@@ -169,11 +176,11 @@ class BluetoothMenu(Gtk.Box):
         title_label.set_markup("<b>bluetooth</b>")
         title_label.set_xalign(0)
         header_hbox.pack_start(title_label, True, True, 0)
-
-
         header_hbox.pack_end(self.status_switch, False, False, 0)
+        self._container.pack_start(header_hbox, False, False, 0)
 
-        # below header: rescan and scan status label
+    def _setup_scan_ui(self):
+        """Sets up the scan UI elements (refresh button and status label)."""
         scan_container = Gtk.Box()
 
         self.refresh_btn = Gtk.Button()
@@ -187,8 +194,10 @@ class BluetoothMenu(Gtk.Box):
 
         scan_container.pack_start(self.scan_status_label, False, False, 0)
         scan_container.pack_end(self.refresh_btn, False, False, 0)
+        self._container.pack_start(scan_container, False, False, 0)
 
-        # devices listview
+    def _setup_devices_list_ui(self):
+        """Sets up the devices list UI elements."""
         devices_scrollable = Gtk.ScrolledWindow()
         devices_scrollable.get_style_context().add_class("scrollable")
         devices_scrollable.set_policy(
@@ -202,24 +211,10 @@ class BluetoothMenu(Gtk.Box):
         self.devices_listbox.connect("row-activated", self.on_device_row_activated)
         self.devices_listbox.connect(
             "button-press-event", self.on_listbox_button_press
-        )  # handle right click for context menu
+        )
 
         devices_scrollable.add(self.devices_listbox)
-
-        # container for everything
-        self._container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        self._container.set_hexpand(True)
-        self._container.set_vexpand(True)
-
-        self._container.pack_start(header_hbox, False, False, 0)
-        self._container.pack_start(scan_container, False, False, 0)
         self._container.pack_start(devices_scrollable, True, True, 0)
-
-        self.add(self._container)
-
-        self.update_switch()
-        self.refresh_bluetooth(None)
-
 
     def refresh_bluetooth(self, button, scan_duration: int | None = None) -> bool:
         if scan_duration is None:
@@ -274,7 +269,7 @@ class BluetoothMenu(Gtk.Box):
                     row.show()
 
                 except Exception as e:
-                    logger.info("who cares xd " + str(e))
+                    logger.error(f"Error creating BluetoothDeviceRow for device {device}: {e}")
             self.devices_listbox.show_all()
 
     def _set_switch_state(self, state: bool):
@@ -416,13 +411,23 @@ class BluetoothMenu(Gtk.Box):
 
         self.task_manager.run(forget())
 
+    def _enable_bluetooth_action(self):
+        """Handles the actions for enabling Bluetooth."""
+        self.scan_status_label.set_text("enabling bluetooth...")
+        self.task_manager.run(asyncio.to_thread(lambda: set_bluetooth_power(True)))
+        self.scan_status_label.set_text("scanning for devices...")
+        GLib.timeout_add(1000, self.refresh_bluetooth, None) # Add a short delay before refresh
+        self._bt_enabled = True
+
+    def _disable_bluetooth_action(self):
+        """Handles the actions for disabling Bluetooth."""
+        self.scan_status_label.set_text("disabling bluetooth...")
+        self.task_manager.run(asyncio.to_thread(lambda: set_bluetooth_power(False)))
+        self.devices_listbox.foreach(lambda row: self.devices_listbox.remove(row))
+        self.scan_status_label.set_text("off")
+        self._bt_enabled = False
+
     def on_switch_toggled(self, switch, gparam):
-        async def enable_bluetooth():
-            await asyncio.to_thread(lambda: set_bluetooth_power(True))
-
-        async def disable_bluetooth():
-            await asyncio.to_thread(lambda: set_bluetooth_power(False))
-
         active = switch.get_active()
         logger.info(f"User toggled Bluetooth switch to {'ON' if active else 'OFF'}")
 
@@ -430,26 +435,14 @@ class BluetoothMenu(Gtk.Box):
         switch.handler_block_by_func(self.on_switch_toggled)
 
         try:
-            match active:
-                case True:
-                    self.scan_status_label.set_text("enabling bluetooth...")
-                    self.task_manager.run(enable_bluetooth())
-                    self.scan_status_label.set_text("scanning for devices...")
-                    GLib.timeout_add(1000, self.refresh_bluetooth, None)
-                    self._bt_enabled = True
-                case False:
-                    self.scan_status_label.set_text("disabling bluetooth...")
-                    self.task_manager.run(disable_bluetooth())
-                    self.devices_listbox.foreach(
-                        lambda row: self.devices_listbox.remove(row)
-                    )
-                    self.scan_status_label.set_text("off")
-                    self._bt_enabled = False
-
+            if active:
+                self._enable_bluetooth_action()
+            else:
+                self._disable_bluetooth_action()
         except Exception as e:
-            logger.info(f"Exception in bluetooth switch handler: {e}")
+            logger.error(f"Exception in bluetooth switch handler: {e}")
             # Make sure the switch reflects the actual bluetooth state
-            self.update_switch()
+            self.update_switch() # This could be problematic if update_switch also triggers this handler
         finally:
             # Unblock signal handlers when done
             self.emit("enabled-status-changed", active)

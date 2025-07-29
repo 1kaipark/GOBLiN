@@ -20,7 +20,6 @@ class CalendarWindow(Window):
         super().__init__(
             layer="overlay",
             title="calendar-popup",
-            anchor="center left",
             margin="10px 10px 10px 10px",
             exclusivity="none",
             visible=False,

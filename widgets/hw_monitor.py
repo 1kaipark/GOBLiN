@@ -22,24 +22,28 @@ class HWMonitor(Gtk.Box):
             name="hwmon-item",
             style_classes="blue",
             icon=Icons.CPU.value,
+            orientation=Gtk.Orientation.VERTICAL,
         )
 
         self.ram_progress_bar = CircularIndicator(
             name="hwmon-item",
             style_classes="yellow",
             icon=Icons.MEM.value,
+            orientation=Gtk.Orientation.VERTICAL,
         )
 
         self.cpu_temp_progress_bar = CircularIndicator(
             name="hwmon-item",
             style_classes="red",
             icon=Icons.TEMP.value,
+            orientation=Gtk.Orientation.VERTICAL,
         )
 
         self.disk_progress_bar = CircularIndicator(
             name="hwmon-item",
             style_classes="green",
             icon=Icons.DISK.value,
+            orientation=Gtk.Orientation.VERTICAL,
         )
 
         self._container = Gtk.Box(spacing=36)

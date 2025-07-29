@@ -12,14 +12,15 @@ import psutil
 
 
 class BatterySingle(Gtk.Box):
-    def __init__(self, size=24, **kwargs) -> None:
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, **kwargs)
+    def __init__(self, size=20, **kwargs) -> None:
+        super().__init__(**kwargs)
 
         self.set_halign(Gtk.Align.CENTER)
 
         self.battery_progress_bar = CircularIndicator(
             size=size,
             name="battery",
+            orientation=self.get_orientation(),
             icon=Icons.BAT.value,
         )
 

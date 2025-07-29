@@ -1,3 +1,4 @@
+
 from fabric.widgets.box import Box
 from fabric.widgets.datetime import Button, DateTime
 from fabric.widgets.centerbox import CenterBox
@@ -12,6 +13,7 @@ from fabric.hyprland.widgets import (
     Workspaces as HyprlandWorkspaces,
     WorkspaceButton as HyprlandWorkspaceButton,
 )
+from gi.repository.GLib import variant_parse_error_print_context
 
 from modules.control_center import ControlCenter
 from modules.osd import OSD
@@ -31,46 +33,49 @@ from loguru import logger
 
 from gi.repository import Gtk, Gdk
 
-class LeftBar(Window):
+class StatusBar(Window):
     def __init__(
         self,
         config: dict = DEFAULT_CONFIG,
     ):
+        self.config: dict = config
+        self.vertical_bar: bool = True
+        child_orientation = Gtk.Orientation.VERTICAL if self.vertical_bar else Gtk.Orientation.HORIZONTAL
+
         super().__init__(
             name="bar",
-            title="left-bar",
+            title="status-bar",
             layer="top",
-            anchor="top left bottom left",
-            margin="10px 0px 10px 15px",  # top right bottom left
+            anchor=("top left bottom left" if self.vertical_bar else "top left top right"),
             exclusivity="auto",
             visible=False,
             all_visible=False,
         )
-        self.config: dict = config
 
         self.start_menu = Button(
             #            label=" ",
             label=Icons.SEND.value,
             on_clicked=self.show_control_center,
             name="bar-icon",
-            style="margin: 15px 10px 10px 5px;",  # to center the icon glyph
         )
 
         self.control_center = ControlCenter()
-        
         self.control_center.connect("notify_hide", self.on_cc_hidden)
         self.control_center.hide()
         
         self.osd = OSD()
         self.osd.hide()
 
-        self.calendar_window = CalendarWindow(name="window")
+        self.calendar_window = CalendarWindow(
+            name="window",
+            anchor=("center left" if self.vertical_bar else "top center")
+        )
         self.calendar_window.hide()
         
         if self.config["workspaces_wm"] == "hyprland":
             self.workspaces = HyprlandWorkspaces(
                 name="workspaces",
-                orientation="v",
+                orientation=child_orientation,
                 h_align="center",
                 spacing=4,
                 buttons_factory=lambda ws_id: HyprlandWorkspaceButton(
@@ -81,21 +86,35 @@ class LeftBar(Window):
                 ),
             )
         elif self.config["workspaces_wm"] == "sway":
-            self.workspaces = SwayWorkspaces(orientation="v", icons=self.config["ws_icons"])
+            self.workspaces = SwayWorkspaces(
+                orientation=child_orientation,
+                icons=self.config["ws_icons"]
+            )
 
-        self.battery = BatterySingle(name="battery", orientation=Gtk.Orientation.VERTICAL)
+        self.battery = BatterySingle(name="battery", orientation=child_orientation)
 
         self.system_tray = Box(
-            name="system-tray", children=[SystemTray(pixel_size=20, orientation=Gtk.Orientation.VERTICAL)], h_align="center"
+            name="system-tray",
+            children=[
+                SystemTray(
+                    pixel_size=20,
+                    orientation=child_orientation,
+                )
+            ],
+            h_align="center"
         )
 
-        self.date_time = DateTime(style_classes="bar-clock", formatters=("%H\n%M"))
+        self.date_time = DateTime(
+            style_classes="bar-clock",
+            formatters=(
+                ("%H\n%M") if self.vertical_bar else ("%H %M")
+            )
+        )
         self.date_time.connect("clicked", self.show_calendar_window)
 
         self.notification_button = Button(
             label=Icons.NOTIFICATIONS.value,
             name="bar-icon",
-            style="margin: 10px 10px 15px 5px;",  # to center the icon glyph
         )
         self.notification_button.connect(
             "clicked",
@@ -104,17 +123,17 @@ class LeftBar(Window):
 
         self.children = CenterBox(
             name="bar",
-            orientation="v",
+            orientation=child_orientation,
             start_children=Box(
                 name="bar-inner",
                 spacing=4,
-                orientation="v",
+                orientation=child_orientation,
                 children=[self.start_menu, self.workspaces],
             ),
             center_children=Box(
                 name="bar-inner",
                 spacing=4,
-                orientation="v",
+                orientation=child_orientation,
                 children=[
                     self.date_time,
                 ],
@@ -122,7 +141,7 @@ class LeftBar(Window):
             end_children=Box(
                 name="bar-inner",
                 spacing=4,
-                orientation="v",
+                orientation=child_orientation,
                 children=[
                     self.system_tray,
                     self.battery,

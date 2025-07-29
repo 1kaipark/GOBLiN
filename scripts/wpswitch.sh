@@ -158,7 +158,7 @@ class WallpaperList(Gtk.Box):
 
     @cooldown(cooldown_time=0.5)
     def on_clicked(self, button, image):
-        exec_shell_command_async(f"wal -i {image} --contrast 5.0")
+        exec_shell_command_async(f"wal -i {image} --contrast 3.0")
         exec_shell_command_async(f'{os.getenv("HOME")}/fabric/.venv/bin/python -m fabric execute leftbar "leftbar.refresh_css()"')
 
         self.get_toplevel().destroy()
